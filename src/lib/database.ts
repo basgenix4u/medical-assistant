@@ -11,27 +11,23 @@ export interface ConsultationData {
   symptoms_description?: string;
   duration?: string;
   severity_level?: number;
-  ai_analysis?: Record<string, unknown>;
+  ai_analysis?: {
+    severity_assessment: string;
+    confidence_score: number;
+    summary: string;
+    conditions: Array<{ name: string; probability: number; description: string; severity: string }>;
+    recommendations: string[];
+    remedies: Array<{ id: string; name: string; description: string; remedy_type: string }>;
+    warnings: string[];
+    see_doctor: { recommended: boolean; urgency: string; reason: string };
+    [key: string]: unknown;  // This allows additional properties
+  };
   ai_severity?: string;
-  conditions_identified?: Record<string, unknown>[];
+  conditions_identified?: Array<{ name: string; probability: number; description: string; severity: string }>;
   recommendations?: string[];
-  suggested_remedies?: Record<string, unknown>[];
+  suggested_remedies?: Array<{ id: string; name: string; description: string; remedy_type: string }>;
   warning_flags?: string[];
   follow_up_recommended?: boolean;
-}
-
-export interface RatingData {
-  remedy_id: string;
-  consultation_id?: string;
-  rating: number;
-  effectiveness?: number;
-  ease_of_use?: number;
-  review_text?: string;
-  would_recommend?: boolean;
-}
-
-interface DatabaseError {
-  message: string;
 }
 
 // ============================================
