@@ -25,8 +25,6 @@ export function usePWA() {
     
     // Check online status
     const isOnline = navigator.onLine;
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatus((prev) => ({
       ...prev,
       isInstalled,

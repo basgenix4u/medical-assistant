@@ -16,7 +16,14 @@ interface AuthContextType {
   signInWithGithub: () => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
-  updatePassword: (newPassword: string) => Promise<{ error: AuthError | null }>;
+  /**
+   * Update the current user's password. Requires verifying the current
+   * password first to prevent session-hijack → password-lockout attacks.
+   */
+  updatePassword: (
+    currentPassword: string,
+    newPassword: string
+  ) => Promise<{ error: AuthError | { message: string } | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -111,7 +118,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
-  const updatePassword = async (newPassword: string) => {
+  /**
+   * Update password securely. Verifies the current password via a
+   * signInWithPassword call BEFORE calling supabase.auth.updateUser, so
+   * a stolen session alone cannot lock out the legitimate user.
+   */
+  const updatePassword = async (
+    currentPassword: string,
+    newPassword: string
+  ) => {
+    if (!user?.email) {
+      return { error: { message: "No active session." } };
+    }
+    // Step 1: Verify current password
+    const { error: verifyError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword,
+    });
+    if (verifyError) {
+      return {
+        error: { message: "Current password is incorrect." },
+      };
+    }
+    // Step 2: Update password
     const { error } = await supabase.auth.updateUser({
       password: newPassword,
     });

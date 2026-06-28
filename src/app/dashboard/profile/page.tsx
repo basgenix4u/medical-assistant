@@ -42,7 +42,6 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadProfile();
     } else {
       setLoading(false);
