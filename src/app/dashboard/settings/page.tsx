@@ -26,6 +26,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { useTheme } from "@/lib/theme-context";
 import {
   getProfile,
   updateProfile,
@@ -41,6 +42,7 @@ type TabType = "profile" | "notifications" | "appearance" | "security" | "privac
 
 export default function SettingsPage() {
   const { user, signOut, updatePassword } = useAuth();
+  const { setTheme } = useTheme();
 
   const [activeTab, setActiveTab] = useState<TabType>("profile");
   const [loading, setLoading] = useState(true);
@@ -135,6 +137,8 @@ export default function SettingsPage() {
     if (error) {
       toast.error("Failed to save preferences");
     } else {
+      // Apply theme immediately so the user sees the change
+      setTheme(preferences.theme);
       toast.success("Preferences saved!");
     }
     setSaving(false);

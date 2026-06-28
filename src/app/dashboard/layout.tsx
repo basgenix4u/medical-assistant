@@ -19,6 +19,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { useProfile } from "@/lib/profile-context";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -257,6 +258,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                 {displayEmail}
               </p>
             </div>
+            <ThemeToggle size="sm" />
             <button
               onClick={handleSignOut}
               title="Sign Out"
