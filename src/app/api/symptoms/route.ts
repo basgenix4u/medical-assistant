@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 // Fallback symptoms if database is empty
 const DEFAULT_SYMPTOMS = [
@@ -28,20 +29,52 @@ const DEFAULT_SYMPTOMS = [
 ];
 
 export async function GET(request: NextRequest) {
+  // Auth check
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json(
+      { error: "Unauthorized. Please sign in." },
+      { status: 401 }
+    );
+  }
+
+  // Rate limit (relaxed for GET)
+  const ip = getClientIp(request);
+  const rl = rateLimit({ key: `symptoms:${ip}`, limit: 60, windowMs: 60_000 });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests." },
+      { status: 429 }
+    );
+  }
+
   try {
-    const supabase = await createClient();
     const { data: symptoms, error } = await supabase
       .from("symptoms")
       .select("*")
       .order("name");
 
     if (error || !symptoms || symptoms.length === 0) {
-      return NextResponse.json(DEFAULT_SYMPTOMS);
+      // Cache for 60s even on fallback
+      return NextResponse.json(DEFAULT_SYMPTOMS, {
+        headers: {
+          "Cache-Control": "private, max-age=60",
+        },
+      });
     }
 
-    return NextResponse.json(symptoms);
+    return NextResponse.json(symptoms, {
+      headers: {
+        "Cache-Control": "private, max-age=60",
+      },
+    });
   } catch (error) {
     console.error("Symptoms Error:", error);
-    return NextResponse.json(DEFAULT_SYMPTOMS);
+    return NextResponse.json(DEFAULT_SYMPTOMS, {
+      headers: { "Cache-Control": "private, max-age=60" },
+    });
   }
 }
