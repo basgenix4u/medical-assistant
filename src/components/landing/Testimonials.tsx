@@ -34,7 +34,14 @@ const testimonials = [
 
 export function Testimonials() {
   return (
-    <section id="testimonials" className="section bg-surface">
+    <section
+      id="testimonials"
+      style={{
+        paddingTop: "var(--space-20)",
+        paddingBottom: "var(--space-20)",
+        background: "var(--bg-secondary)",
+      }}
+    >
       <div className="container">
         {/* Section Header */}
         <motion.div
@@ -43,20 +50,46 @@ export function Testimonials() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-accent rounded-full mb-4">
-            <Star size={14} className="text-primary fill-primary" />
-            <span className="text-sm font-medium text-primary">Testimonials</span>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 16px",
+              background: "var(--accent)",
+              borderRadius: "9999px",
+              marginBottom: "16px",
+            }}
+          >
+            <Star
+              size={14}
+              style={{ color: "var(--primary)", fill: "var(--primary)" }}
+              aria-hidden="true"
+            />
+            <span
+              style={{
+                fontSize: "var(--text-sm)",
+                fontWeight: 500,
+                color: "var(--primary)",
+              }}
+            >
+              Testimonials
+            </span>
           </div>
           <h2>
             Loved by <span className="text-gradient">Thousands</span>
           </h2>
-          <p>
-            See what our users say about their experience with MedAssist.
-          </p>
+          <p>See what our users say about their experience with MedAssist.</p>
         </motion.div>
 
         {/* Testimonials Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: "var(--space-8)",
+          }}
+        >
           {testimonials.map((testimonial, index) => (
             <motion.div
               key={testimonial.name}
@@ -67,30 +100,70 @@ export function Testimonials() {
               transition={{ delay: index * 0.1 }}
             >
               {/* Quote Icon */}
-              <div className="w-10 h-10 bg-accent rounded-lg flex items-center justify-center mb-4">
-                <Quote size={18} className="text-primary" />
+              <div
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  background: "var(--accent)",
+                  borderRadius: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: "var(--space-4)",
+                }}
+              >
+                <Quote size={18} style={{ color: "var(--primary)" }} aria-hidden="true" />
               </div>
 
               {/* Stars */}
-              <div className="flex gap-1 mb-4">
+              <div
+                style={{
+                  display: "flex",
+                  gap: "2px",
+                  marginBottom: "var(--space-4)",
+                }}
+                aria-label={`Rated ${testimonial.rating} out of 5`}
+              >
                 {Array.from({ length: testimonial.rating }).map((_, i) => (
                   <Star
                     key={i}
                     size={16}
-                    className="text-yellow-500 fill-yellow-500"
+                    style={{ color: "#facc15", fill: "#facc15" }}
+                    aria-hidden="true"
                   />
                 ))}
               </div>
 
               {/* Content */}
-              <p className="testimonial-content">&quot;{testimonial.content}&quot;</p>
+              <p className="testimonial-content">
+                &ldquo;{testimonial.content}&rdquo;
+              </p>
 
               {/* Author */}
               <div className="testimonial-author">
-                <div className="testimonial-avatar">{testimonial.avatar}</div>
+                <div className="testimonial-avatar" aria-hidden="true">
+                  {testimonial.avatar}
+                </div>
                 <div>
-                  <p className="font-semibold text-primary">{testimonial.name}</p>
-                  <p className="text-sm text-muted">{testimonial.role}</p>
+                  <p
+                    style={{
+                      fontSize: "var(--text-sm)",
+                      fontWeight: 600,
+                      color: "var(--text-primary)",
+                      margin: 0,
+                    }}
+                  >
+                    {testimonial.name}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "var(--text-xs)",
+                      color: "var(--text-tertiary)",
+                      margin: 0,
+                    }}
+                  >
+                    {testimonial.role}
+                  </p>
                 </div>
               </div>
             </motion.div>

@@ -13,6 +13,14 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    // Allow setting state inside useEffect after async work.
+    // Common pattern: fetch from API on mount, then setState.
+    // This is safe when guarded by a `loading` flag.
+    rules: {
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

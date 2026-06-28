@@ -18,7 +18,7 @@ const features = [
     icon: Brain,
     title: "AI-Powered Analysis",
     description:
-      "Advanced artificial intelligence analyzes your symptoms to provide accurate insights and personalized health recommendations.",
+      "Advanced AI analyzes your symptoms to provide informational insights and general health considerations.",
   },
   {
     icon: Leaf,
@@ -36,7 +36,7 @@ const features = [
     icon: MessageCircle,
     title: "24/7 AI Chat Assistant",
     description:
-      "Get instant answers to your health questions anytime with our intelligent conversational assistant.",
+      "Get general answers to your health questions anytime with our intelligent conversational assistant.",
   },
   {
     icon: History,
@@ -48,7 +48,7 @@ const features = [
     icon: Shield,
     title: "Safety First Approach",
     description:
-      "Clear warnings for serious symptoms that require immediate professional medical attention.",
+      "Clear warnings and emergency escalation for serious symptoms that require immediate professional attention.",
   },
 ];
 
@@ -59,7 +59,14 @@ export function Features() {
   });
 
   return (
-    <section id="features" className="section bg-surface">
+    <section
+      id="features"
+      style={{
+        paddingTop: "var(--space-20)",
+        paddingBottom: "var(--space-20)",
+        background: "var(--bg-secondary)",
+      }}
+    >
       <div className="container">
         {/* Section Header */}
         <motion.div
@@ -68,22 +75,46 @@ export function Features() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-accent rounded-full mb-4">
-            <span className="text-sm font-medium text-primary">Features</span>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 16px",
+              background: "var(--accent)",
+              borderRadius: "9999px",
+              marginBottom: "16px",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "var(--text-sm)",
+                fontWeight: 500,
+                color: "var(--primary)",
+              }}
+            >
+              Features
+            </span>
           </div>
           <h2>
-            Everything You Need for <span className="text-gradient">Natural Wellness</span>
+            Everything You Need for{" "}
+            <span className="text-gradient">Natural Wellness</span>
           </h2>
           <p>
             Our comprehensive platform combines cutting-edge AI technology with
-            centuries of traditional healing wisdom.
+            centuries of traditional healing wisdom — all informational,
+            always with safety guardrails.
           </p>
         </motion.div>
 
         {/* Features Grid */}
         <div
           ref={ref}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: "var(--space-6)",
+          }}
         >
           {features.map((feature, index) => (
             <motion.div
@@ -93,18 +124,41 @@ export function Features() {
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: index * 0.1, duration: 0.5 }}
             >
-              <div className="feature-icon">
-                <feature.icon size={24} />
+              <div className="feature-card-icon">
+                <feature.icon size={24} aria-hidden="true" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-              <p className="text-muted leading-relaxed">{feature.description}</p>
+              <h3
+                style={{
+                  fontSize: "var(--text-xl)",
+                  fontWeight: 600,
+                  marginBottom: "var(--space-3)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                {feature.title}
+              </h3>
+              <p
+                style={{
+                  fontSize: "var(--text-sm)",
+                  color: "var(--text-tertiary)",
+                  lineHeight: "var(--leading-relaxed)",
+                  margin: 0,
+                }}
+              >
+                {feature.description}
+              </p>
             </motion.div>
           ))}
         </div>
 
         {/* Stats */}
         <motion.div
-          className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: "var(--space-6)",
+            marginTop: "var(--space-16)",
+          }}
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}

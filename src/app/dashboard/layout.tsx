@@ -1,5 +1,3 @@
-// src/app/dashboard/layout.tsx
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -20,6 +18,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useProfile } from "@/lib/profile-context";
+import { AuthGuard } from "@/components/auth/AuthGuard";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -36,6 +36,14 @@ const bottomNavItems = [
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <AuthGuard>
+      <DashboardShell>{children}</DashboardShell>
+    </AuthGuard>
+  );
+}
+
+function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   const { profile } = useProfile();
@@ -47,7 +55,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
     };
-    
+
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
@@ -57,7 +65,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (href === "/dashboard") {
       return pathname === "/dashboard";
     }
-    return pathname.startsWith(href);
+    return pathname?.startsWith(href) ?? false;
   };
 
   const displayName = profile?.full_name || user?.user_metadata?.full_name || "User";
@@ -118,6 +126,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     color: active ? "white" : "var(--text-secondary)",
   });
 
+  const handleSignOut = async () => {
+    await signOut();
+    window.location.href = "/";
+  };
+
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg-secondary)" }}>
       {/* Desktop Sidebar */}
@@ -155,12 +168,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </Link>
 
         {/* Main Navigation */}
-        <nav style={{ flex: 1 }}>
+        <nav style={{ flex: 1 }} aria-label="Primary">
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {navItems.map((item) => (
               <li key={item.href} style={{ marginBottom: "4px" }}>
-                <Link href={item.href} style={navLinkStyle(isActive(item.href))}>
-                  <item.icon size={20} />
+                <Link
+                  href={item.href}
+                  style={navLinkStyle(isActive(item.href))}
+                  aria-current={isActive(item.href) ? "page" : undefined}
+                >
+                  <item.icon size={20} aria-hidden="true" />
                   <span>{item.label}</span>
                 </Link>
               </li>
@@ -173,8 +190,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <ul style={{ listStyle: "none", padding: 0, margin: "0 0 16px 0" }}>
             {bottomNavItems.map((item) => (
               <li key={item.href} style={{ marginBottom: "4px" }}>
-                <Link href={item.href} style={navLinkStyle(isActive(item.href))}>
-                  <item.icon size={20} />
+                <Link
+                  href={item.href}
+                  style={navLinkStyle(isActive(item.href))}
+                  aria-current={isActive(item.href) ? "page" : undefined}
+                >
+                  <item.icon size={20} aria-hidden="true" />
                   <span>{item.label}</span>
                 </Link>
               </li>
@@ -193,6 +214,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             }}
           >
             <div
+              aria-hidden="true"
               style={{
                 width: "40px",
                 height: "40px",
@@ -236,9 +258,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {displayEmail}
               </p>
             </div>
+            <ThemeToggle size="sm" />
             <button
-              onClick={signOut}
+              onClick={handleSignOut}
               title="Sign Out"
+              aria-label="Sign out"
               style={{
                 background: "none",
                 border: "none",
@@ -252,7 +276,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 flexShrink: 0,
               }}
             >
-              <LogOut size={18} />
+              <LogOut size={18} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -265,6 +289,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none" }}
         >
           <div
+            aria-hidden="true"
             style={{
               width: "32px",
               height: "32px",
@@ -286,6 +311,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </Link>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileMenuOpen}
           style={{
             background: "none",
             border: "none",
@@ -294,13 +321,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             color: "var(--text-primary)",
           }}
         >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          {mobileMenuOpen ? <X size={24} aria-hidden="true" /> : <Menu size={24} aria-hidden="true" />}
         </button>
       </header>
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navigation menu"
           style={{
             position: "fixed",
             inset: 0,
@@ -334,6 +364,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               }}
             >
               <div
+                aria-hidden="true"
                 style={{
                   width: "40px",
                   height: "40px",
@@ -354,7 +385,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </span>
             </Link>
 
-            <nav style={{ flex: 1 }}>
+            <nav style={{ flex: 1 }} aria-label="Mobile navigation">
               <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                 {[...navItems, ...bottomNavItems].map((item) => (
                   <li key={item.href} style={{ marginBottom: "4px" }}>
@@ -362,8 +393,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       href={item.href}
                       onClick={() => setMobileMenuOpen(false)}
                       style={navLinkStyle(isActive(item.href))}
+                      aria-current={isActive(item.href) ? "page" : undefined}
                     >
-                      <item.icon size={20} />
+                      <item.icon size={20} aria-hidden="true" />
                       <span>{item.label}</span>
                     </Link>
                   </li>
@@ -383,6 +415,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               }}
             >
               <div
+                aria-hidden="true"
                 style={{
                   width: "40px",
                   height: "40px",
@@ -405,7 +438,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </p>
               </div>
               <button
-                onClick={signOut}
+                onClick={handleSignOut}
+                aria-label="Sign out"
                 style={{
                   background: "none",
                   border: "none",
@@ -414,7 +448,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   color: "var(--text-tertiary)",
                 }}
               >
-                <LogOut size={18} />
+                <LogOut size={18} aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -422,7 +456,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* Main Content */}
-      <main style={mainStyle}>{children}</main>
+      <main id="main-content" style={mainStyle}>{children}</main>
     </div>
   );
 }

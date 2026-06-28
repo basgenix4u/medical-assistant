@@ -20,7 +20,6 @@ export default function InstallPrompt() {
   useEffect(() => {
     // Check if already installed
     const standalone = window.matchMedia("(display-mode: standalone)").matches;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsStandalone(standalone);
 
     // Check if iOS

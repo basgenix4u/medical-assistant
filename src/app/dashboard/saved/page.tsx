@@ -49,7 +49,6 @@ export default function SavedRemediesPage() {
 
   useEffect(() => {
     if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadSavedRemedies();
     } else {
       setLoading(false);
