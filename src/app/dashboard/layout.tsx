@@ -454,7 +454,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main Content */}
-      <main style={mainStyle}>{children}</main>
+      <main id="main-content" style={mainStyle}>{children}</main>
     </div>
   );
 }

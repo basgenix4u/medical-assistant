@@ -4,12 +4,27 @@ import type { Metadata, Viewport } from "next";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/lib/auth-context";
 import { ProfileProvider } from "@/lib/profile-context";
+import { ThemeProvider } from "@/lib/theme-context";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MedAssist - Your Intelligent Medical Assistant",
-  description: "AI-powered symptom analysis and natural remedy recommendations",
+  title: {
+    default: "MedAssist - Your Intelligent Medical Assistant",
+    template: "%s | MedAssist",
+  },
+  description:
+    "AI-powered symptom analysis and natural remedy recommendations. For informational purposes only — not a substitute for professional medical advice.",
+  applicationName: "MedAssist",
+  keywords: [
+    "medical assistant",
+    "symptom checker",
+    "natural remedies",
+    "AI health",
+    "wellness",
+  ],
+  authors: [{ name: "Abdulbasit Abdulalim" }],
+  creator: "Abdulbasit Abdulalim",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -23,12 +38,20 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "MedAssist",
     title: "MedAssist - Your Intelligent Medical Assistant",
-    description: "AI-powered symptom analysis and natural remedy recommendations",
+    description:
+      "AI-powered symptom analysis and natural remedy recommendations. Informational only.",
+    locale: "en_US",
+    url: "https://medical-assistant-ashen.vercel.app",
   },
   twitter: {
     card: "summary_large_image",
     title: "MedAssist - Your Intelligent Medical Assistant",
-    description: "AI-powered symptom analysis and natural remedy recommendations",
+    description:
+      "AI-powered symptom analysis and natural remedy recommendations.",
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 
@@ -39,8 +62,8 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
   viewportFit: "cover",
 };
 
@@ -62,36 +85,73 @@ export default function RootLayout({
         <meta name="msapplication-tap-highlight" content="no" />
       </head>
       <body suppressHydrationWarning>
-        <AuthProvider>
-          <ProfileProvider>
-            {children}
-            <InstallPrompt />
-            <Toaster
-              position="top-center"
-              toastOptions={{
-                duration: 3000,
-                style: {
-                  background: "var(--bg-tertiary)",
-                  color: "var(--text-primary)",
-                  border: "1px solid var(--border-light)",
-                  borderRadius: "12px",
-                },
-                success: {
-                  iconTheme: {
-                    primary: "#22c55e",
-                    secondary: "white",
+        <a
+          href="#main-content"
+          style={{
+            position: "absolute",
+            left: "-9999px",
+            top: "auto",
+            width: "1px",
+            height: "1px",
+            overflow: "hidden",
+          }}
+          onFocus={(e) => {
+            const el = e.currentTarget;
+            el.style.left = "16px";
+            el.style.top = "16px";
+            el.style.width = "auto";
+            el.style.height = "auto";
+            el.style.padding = "12px 24px";
+            el.style.background = "var(--primary)";
+            el.style.color = "white";
+            el.style.borderRadius = "8px";
+            el.style.zIndex = "9999";
+            el.style.fontWeight = "600";
+          }}
+          onBlur={(e) => {
+            const el = e.currentTarget;
+            el.style.left = "-9999px";
+            el.style.top = "auto";
+            el.style.width = "1px";
+            el.style.height = "1px";
+            el.style.padding = "0";
+            el.style.background = "transparent";
+          }}
+        >
+          Skip to main content
+        </a>
+        <ThemeProvider>
+          <AuthProvider>
+            <ProfileProvider>
+              {children}
+              <InstallPrompt />
+              <Toaster
+                position="top-center"
+                toastOptions={{
+                  duration: 3000,
+                  style: {
+                    background: "var(--bg-tertiary)",
+                    color: "var(--text-primary)",
+                    border: "1px solid var(--border-light)",
+                    borderRadius: "12px",
                   },
-                },
-                error: {
-                  iconTheme: {
-                    primary: "#ef4444",
-                    secondary: "white",
+                  success: {
+                    iconTheme: {
+                      primary: "#22c55e",
+                      secondary: "white",
+                    },
                   },
-                },
-              }}
-            />
-          </ProfileProvider>
-        </AuthProvider>
+                  error: {
+                    iconTheme: {
+                      primary: "#ef4444",
+                      secondary: "white",
+                    },
+                  },
+                }}
+              />
+            </ProfileProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

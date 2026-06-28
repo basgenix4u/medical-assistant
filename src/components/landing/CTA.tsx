@@ -7,7 +7,7 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle } from "lucide-react";
 
 const benefits = [
-  "No account required",
+  "No account required to browse",
   "100% free to use",
   "Instant AI analysis",
   "Privacy protected",
@@ -22,14 +22,40 @@ export function CTA() {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
+          style={{
+            position: "relative",
+            overflow: "hidden",
+          }}
         >
-          {/* Pattern Overlay */}
-          <div className="cta-pattern" />
+          {/* Decorative pattern overlay */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              opacity: 0.1,
+              backgroundImage:
+                "radial-gradient(circle at 20% 30%, white 0%, transparent 40%), radial-gradient(circle at 80% 70%, white 0%, transparent 40%)",
+              pointerEvents: "none",
+            }}
+          />
 
           {/* Content */}
-          <div className="relative z-10 max-w-2xl mx-auto">
+          <div
+            style={{
+              position: "relative",
+              maxWidth: "640px",
+              margin: "0 auto",
+              textAlign: "center",
+            }}
+          >
             <motion.h2
-              className="text-3xl md:text-4xl font-bold mb-4"
+              style={{
+                fontSize: "clamp(1.75rem, 3vw, 2.25rem)",
+                fontWeight: 700,
+                marginBottom: "var(--space-4)",
+                color: "white",
+              }}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -39,29 +65,31 @@ export function CTA() {
             </motion.h2>
 
             <motion.p
-              className="text-lg mb-8 opacity-90"
+              style={{
+                fontSize: "var(--text-lg)",
+                marginBottom: "var(--space-8)",
+                color: "rgba(255, 255, 255, 0.9)",
+              }}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
             >
-              Join thousands of users who trust MedAssist for natural health guidance.
+              Join users who trust MedAssist for general health information
+              and traditional remedy suggestions.
             </motion.p>
 
             {/* Benefits */}
             <motion.div
-              className="flex flex-wrap justify-center gap-4 mb-8"
+              className="cta-benefits"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.3 }}
             >
               {benefits.map((benefit) => (
-                <div
-                  key={benefit}
-                  className="flex items-center gap-2 text-sm opacity-90"
-                >
-                  <CheckCircle size={16} />
+                <div key={benefit} className="cta-benefit">
+                  <CheckCircle size={16} aria-hidden="true" />
                   <span>{benefit}</span>
                 </div>
               ))}
@@ -75,11 +103,12 @@ export function CTA() {
               transition={{ delay: 0.4 }}
             >
               <Link
-                href="/dashboard"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-white text-primary font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1"
+                href="/auth/signup"
+                className="cta-button"
+                style={{ textDecoration: "none" }}
               >
                 Get Started Free
-                <ArrowRight size={18} />
+                <ArrowRight size={18} aria-hidden="true" />
               </Link>
             </motion.div>
           </div>
