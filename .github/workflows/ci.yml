@@ -2,12 +2,12 @@ name: Repository CI
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "audit-fixes-*"]
   pull_request:
     branches: ["main"]
 
 jobs:
-  dependency-check:
+  quality-checks:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,8 +20,23 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies without running project secrets/scripts
+      - name: Install dependencies
         run: npm ci --ignore-scripts
 
-      - name: Show available project scripts
-        run: npm run
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+        env:
+          # Dummy env values so the build can complete without real keys.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-anon-key-for-build-only' }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY || 'dummy-key-for-build-only' }}
+
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
