@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { runMigrations } from "@/lib/db/schema";
 import { createClient } from "@/lib/local/server";
 
 const DEFAULT_SYMPTOMS = [
@@ -25,6 +26,7 @@ const DEFAULT_SYMPTOMS = [
 ];
 
 export async function GET() {
+  await runMigrations();
   const supabase = await createClient();
   const user = await supabase.auth.getUser();
   if (!user) {

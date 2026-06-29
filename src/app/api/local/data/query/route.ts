@@ -132,8 +132,19 @@ export async function POST(request: NextRequest) {
     }
 
     if (mode === "insert") {
-      const rows = Array.isArray(payload) ? payload : [payload];
-      if (rows.length === 0) return NextResponse.json({ data: [] });
+      const rowsIn = Array.isArray(payload) ? payload : [payload];
+      if (rowsIn.length === 0) return NextResponse.json({ data: [] });
+      const { randomUUID } = await import("crypto");
+      // Auto-inject owner column + primary key "id" so clients don't have to.
+      const rows = rowsIn.map((r) => {
+        const base = r as Record<string, unknown>;
+        const next: Record<string, unknown> = { ...base };
+        next[cfg.ownerColumn] = user.id;
+        if (!("id" in next) || next.id == null || next.id === "") {
+          next.id = randomUUID();
+        }
+        return next;
+      });
       const cols = Object.keys(rows[0] as Record<string, unknown>);
       const placeholders = rows
         .map(() => `(${cols.map(() => "?").join(", ")})`)
@@ -147,7 +158,9 @@ export async function POST(request: NextRequest) {
       }
       const sql = `INSERT INTO ${actualTable} (${cols.join(", ")}) VALUES ${placeholders}`;
       const r = await db.execute({ sql, args: args as InValue[] });
-      return NextResponse.json({ data: { inserted: rows.length, lastId: r.lastInsertRowid } });
+      return NextResponse.json({
+        data: { inserted: rows.length, lastId: String(r.lastInsertRowid) },
+      });
     }
 
     if (mode === "update") {
@@ -165,7 +178,7 @@ export async function POST(request: NextRequest) {
       const sql = `UPDATE ${actualTable} SET ${sets} WHERE ${where}`;
       args.push(...(allFilters.map((f) => f.val) as InValue[]));
       const r = await db.execute({ sql, args: args as InValue[] });
-      return NextResponse.json({ data: { updated: r.rowsAffected } });
+      return NextResponse.json({ data: { updated: Number(r.rowsAffected) } });
     }
 
     if (mode === "delete") {
@@ -189,7 +202,7 @@ export async function POST(request: NextRequest) {
       const args = cols.map((c) => serialize(p[c], cfg.jsonColumns.includes(c)));
       const sql = `INSERT OR REPLACE INTO ${actualTable} (${cols.join(", ")}) VALUES (${placeholders})`;
       const r = await db.execute({ sql, args: args as InValue[] });
-      return NextResponse.json({ data: { upserted: true, lastId: r.lastInsertRowid } });
+      return NextResponse.json({ data: { upserted: true, lastId: String(r.lastInsertRowid) } });
     }
 
     return NextResponse.json({ error: { message: "Unsupported mode" } }, { status: 400 });

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { runMigrations } from "@/lib/db/schema";
 import { createClient } from "@/lib/local/server";
 import { DEFAULT_REMEDIES } from "@/lib/local/remedies-data";
 
