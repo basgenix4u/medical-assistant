@@ -3,8 +3,23 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
-import { User, Session, AuthError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+
+interface AuthError {
+  message: string;
+  status?: number;
+}
+
+interface User {
+  id: string;
+  email: string;
+  user_metadata?: { full_name?: string };
+}
+
+interface Session {
+  access_token: string;
+  user: User;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -67,12 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          full_name: fullName || "",
-        },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
+      full_name: fullName,
     });
     return { error };
   };
@@ -86,22 +96,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    const { error } = await supabase.auth.signInWithOAuth({ provider: "google" });
     return { error };
   };
 
   const signInWithGithub = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    const { error } = await supabase.auth.signInWithOAuth({ provider: "github" });
     return { error };
   };
 
@@ -112,9 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
-    });
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
     return { error };
   };
 

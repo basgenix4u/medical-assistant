@@ -39,12 +39,19 @@ export function RemedyRating({ remedyId, remedyName, onRatingSubmit }: RemedyRat
   const loadExistingRating = async () => {
     const { data } = await getRemedyRating(remedyId);
     if (data) {
-      setExistingRating(data);
-      setRating(data.rating);
-      setEffectiveness(data.effectiveness || 0);
-      setEaseOfUse(data.ease_of_use || 0);
-      setReview(data.review_text || "");
-      setWouldRecommend(data.would_recommend);
+      const rating = data as {
+        rating: number;
+        effectiveness?: number;
+        ease_of_use?: number;
+        review_text?: string;
+        would_recommend?: boolean | null;
+      };
+      setExistingRating(rating);
+      setRating(rating.rating);
+      setEffectiveness(rating.effectiveness || 0);
+      setEaseOfUse(rating.ease_of_use || 0);
+      setReview(rating.review_text || "");
+      setWouldRecommend(rating.would_recommend ?? null);
     }
   };
 

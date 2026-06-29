@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { chatWithAI } from "@/lib/ai";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/local/server";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const MAX_MESSAGES = 40;
@@ -22,9 +22,7 @@ const ChatRequestSchema = z.object({
 export async function POST(request: NextRequest) {
   // Auth check — only signed-in users can spend tokens
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json(
       { error: "Unauthorized. Please sign in to use AI chat." },
@@ -72,19 +70,27 @@ export async function POST(request: NextRequest) {
   try {
     const response = await chatWithAI(parsed.data.messages, parsed.data.context);
 
-    // Save chat to history (best-effort, do not fail the request if DB is down)
+    // Save chat to history via direct DB write (best-effort)
     try {
-      await supabase.from("chat_messages").insert({
-        user_id: user.id,
-        role: "user",
-        content:
-          parsed.data.messages[parsed.data.messages.length - 1]?.content ??
-          "",
-      });
-      await supabase.from("chat_messages").insert({
-        user_id: user.id,
-        role: "assistant",
-        content: response,
+      const { randomUUID } = await import("crypto");
+      const { getDb } = await import("@/lib/db/client");
+      const { runMigrations } = await import("@/lib/db/schema");
+      await runMigrations();
+      const db = getDb();
+      const lastMsg =
+        parsed.data.messages[parsed.data.messages.length - 1]?.content ?? "";
+      await db.execute({
+        sql: "INSERT INTO chat_messages (id, user_id, role, content) VALUES (?, ?, ?, ?), (?, ?, ?, ?)",
+        args: [
+          randomUUID(),
+          user.id,
+          "user",
+          lastMsg,
+          randomUUID(),
+          user.id,
+          "assistant",
+          response,
+        ],
       });
     } catch (dbErr) {
       console.warn("Failed to persist chat messages (non-fatal):", dbErr);

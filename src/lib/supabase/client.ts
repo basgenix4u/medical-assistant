@@ -1,19 +1,5 @@
 // src/lib/supabase/client.ts
-import { createBrowserClient } from '@supabase/ssr';
+// Re-exports the local backend client under the legacy "@/lib/supabase/client"
+// import path so existing code (auth-context, database.ts, etc.) keeps working.
 
-export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-}
-
-// Singleton instance for client-side
-let client: ReturnType<typeof createClient> | null = null;
-
-export function getSupabaseClient() {
-  if (!client) {
-    client = createClient();
-  }
-  return client;
-}
+export { createClient, getSupabaseClient } from "@/lib/local/client";

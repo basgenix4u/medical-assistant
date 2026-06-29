@@ -2,8 +2,22 @@
 
 import { createClient } from "@/lib/supabase/client";
 
+import { DEFAULT_REMEDIES } from "@/lib/local/remedies-data";
+
 // ============================================
 // TYPE DEFINITIONS
+// ============================================
+type DatabaseError = { message: string };
+
+interface RatingData {
+  remedy_id: string;
+  rating: number;
+  effectiveness?: number;
+  ease_of_use?: number;
+  review_text?: string;
+  would_recommend?: boolean;
+}
+
 // ============================================
 
 export interface ConsultationData {
@@ -15,7 +29,7 @@ export interface ConsultationData {
     severity_assessment: string;
     confidence_score: number;
     summary: string;
-    conditions: Array<{ name: string; probability: number; description: string; severity: string }>;
+    conditions: Array<{ name: string; probability: number; description: string; severity?: string }>;
     recommendations: string[];
     remedies: Array<{ id: string; name: string; description: string; remedy_type: string }>;
     warnings: string[];
@@ -23,7 +37,7 @@ export interface ConsultationData {
     [key: string]: unknown;  // This allows additional properties
   };
   ai_severity?: string;
-  conditions_identified?: Array<{ name: string; probability: number; description: string; severity: string }>;
+  conditions_identified?: Array<{ name: string; probability: number; description: string; severity?: string }>;
   recommendations?: string[];
   suggested_remedies?: Array<{ id: string; name: string; description: string; remedy_type: string }>;
   warning_flags?: string[];
@@ -36,7 +50,7 @@ export interface ConsultationData {
 
 export async function saveConsultation(data: ConsultationData) {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await supabase.auth.getUser();
 
   if (!user) {
     return { data: null, error: { message: "Not authenticated" } as DatabaseError };
@@ -56,7 +70,7 @@ export async function saveConsultation(data: ConsultationData) {
 
 export async function getConsultations(limit = 20) {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await supabase.auth.getUser();
 
   if (!user) {
     return { data: [], error: { message: "Not authenticated" } as DatabaseError };
@@ -89,7 +103,7 @@ export async function deleteConsultation(id: string) {
 
 export async function saveRemedyRating(data: RatingData) {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await supabase.auth.getUser();
 
   if (!user) {
     return { data: null, error: { message: "Not authenticated" } as DatabaseError };
@@ -114,7 +128,7 @@ export async function saveRemedyRating(data: RatingData) {
 
 export async function getRemedyRating(remedyId: string) {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await supabase.auth.getUser();
 
   if (!user) {
     return { data: null, error: null };
@@ -133,17 +147,17 @@ export async function getRemedyRating(remedyId: string) {
 export async function getRemedyAverageRating(remedyId: string) {
   const supabase = createClient();
 
-  const { data } = await supabase
+  const result = await supabase
     .from("remedy_ratings")
     .select("rating")
     .eq("remedy_id", remedyId);
 
-  if (!data || data.length === 0) {
+  const ratings = (result.data as Array<{ rating: number }> | null) || [];
+  if (ratings.length === 0) {
     return { average: 0, count: 0 };
   }
-
-  const average = data.reduce((sum, r) => sum + r.rating, 0) / data.length;
-  return { average, count: data.length };
+  const average = ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length;
+  return { average, count: ratings.length };
 }
 
 // ============================================
@@ -152,7 +166,7 @@ export async function getRemedyAverageRating(remedyId: string) {
 
 export async function saveRemedy(remedyId: string, notes?: string) {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await supabase.auth.getUser();
 
   if (!user) {
     return { data: null, error: { message: "Not authenticated" } as DatabaseError };
@@ -173,7 +187,7 @@ export async function saveRemedy(remedyId: string, notes?: string) {
 
 export async function unsaveRemedy(remedyId: string) {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await supabase.auth.getUser();
 
   if (!user) {
     return { error: { message: "Not authenticated" } as DatabaseError };
@@ -190,42 +204,53 @@ export async function unsaveRemedy(remedyId: string) {
 
 export async function getSavedRemedies() {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await supabase.auth.getUser();
 
   if (!user) {
     return { data: [], error: null };
   }
 
-  const { data, error } = await supabase
+  // Two-step query: saved_remedies rows, then look up remedy data from
+  // the static DEFAULT_REMEDIES list (we don't have a remedies table).
+  const result = await supabase
     .from("saved_remedies")
-    .select(`
-      id,
-      remedy_id,
-      notes,
-      created_at,
-      remedies (
-        id,
-        name,
-        description,
-        short_description,
-        remedy_type,
-        effectiveness_rating,
-        ingredients,
-        preparation_method,
-        usage_instructions,
-        precautions,
-        tags
-      )
-    `)
+    .select("*")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  return { data: data || [], error };
+  const rows = (result.data as Array<Record<string, unknown>>) || [];
+  const items = rows.map((row) => {
+    const rid = String(row.remedy_id);
+    const staticRemedy = DEFAULT_REMEDIES.find((r) => r.id === rid);
+    return {
+      id: row.id,
+      remedy_id: row.remedy_id,
+      notes: row.notes,
+      created_at: row.created_at,
+      remedies: staticRemedy
+        ? {
+            id: staticRemedy.id,
+            name: staticRemedy.name,
+            description: staticRemedy.description,
+            short_description: staticRemedy.description.slice(0, 120),
+            remedy_type: staticRemedy.remedy_type,
+            effectiveness_rating: staticRemedy.effectiveness_rating,
+            ingredients: staticRemedy.ingredients,
+            preparation_method: staticRemedy.preparation_method,
+            usage_instructions: staticRemedy.usage_instructions,
+            precautions: staticRemedy.precautions,
+            tags: [],
+          }
+        : null,
+    };
+  });
+
+  return { data: items, error: result.error };
 }
 
 export async function isRemedySaved(remedyId: string) {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await supabase.auth.getUser();
 
   if (!user) {
     return false;
@@ -247,19 +272,29 @@ export async function isRemedySaved(remedyId: string) {
 
 export async function getProfile() {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await supabase.auth.getUser();
 
   if (!user) {
     return { data: null, error: { message: "Not authenticated" } as DatabaseError };
   }
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
-  return { data, error };
+  const data = result.data as {
+    id?: string;
+    full_name?: string | null;
+    date_of_birth?: string | null;
+    gender?: string | null;
+    medical_conditions?: string[];
+    allergies?: string[];
+    avatar_url?: string;
+  } | null;
+
+  return { data, error: result.error as DatabaseError | null };
 }
 
 export async function updateProfile(updates: {
@@ -270,7 +305,7 @@ export async function updateProfile(updates: {
   allergies?: string[];
 }) {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await supabase.auth.getUser();
 
   if (!user) {
     return { data: null, error: { message: "Not authenticated" } as DatabaseError };
@@ -301,19 +336,27 @@ export async function updateProfile(updates: {
 
 export async function getUserPreferences() {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await supabase.auth.getUser();
 
   if (!user) {
     return { data: null, error: null };
   }
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from("user_preferences")
     .select("*")
     .eq("user_id", user.id)
     .maybeSingle();
 
-  return { data, error };
+  const data = result.data as {
+    theme?: string;
+    email_notifications?: boolean;
+    reminder_notifications?: boolean;
+    preferred_remedy_types?: string[];
+    language?: string;
+  } | null;
+
+  return { data, error: result.error };
 }
 
 export async function updateUserPreferences(preferences: {
@@ -324,7 +367,7 @@ export async function updateUserPreferences(preferences: {
   language?: string;
 }) {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await supabase.auth.getUser();
 
   if (!user) {
     return { error: { message: "Not authenticated" } as DatabaseError };
@@ -376,7 +419,7 @@ export async function saveChatMessage(
   consultationId?: string
 ) {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await supabase.auth.getUser();
 
   if (!user) {
     return { data: null, error: { message: "Not authenticated" } as DatabaseError };
@@ -398,7 +441,7 @@ export async function saveChatMessage(
 
 export async function getChatHistory(limit = 50) {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await supabase.auth.getUser();
 
   if (!user) {
     return { data: [], error: null };
@@ -416,7 +459,7 @@ export async function getChatHistory(limit = 50) {
 
 export async function clearChatHistory() {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await supabase.auth.getUser();
 
   if (!user) {
     return { error: { message: "Not authenticated" } as DatabaseError };
@@ -436,19 +479,19 @@ export async function clearChatHistory() {
 
 export async function exportUserData() {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await supabase.auth.getUser();
 
   if (!user) {
     return { data: null, error: { message: "Not authenticated" } as DatabaseError };
   }
 
   const [profile, preferences, consultations, savedRemedies, ratings, chatHistory] = await Promise.all([
-    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     supabase.from("user_preferences").select("*").eq("user_id", user.id).maybeSingle(),
-    supabase.from("consultations").select("*").eq("user_id", user.id),
-    supabase.from("saved_remedies").select("*, remedies(*)").eq("user_id", user.id),
+    supabase.from("consultations").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
+    supabase.from("saved_remedies").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
     supabase.from("remedy_ratings").select("*").eq("user_id", user.id),
-    supabase.from("chat_messages").select("*").eq("user_id", user.id),
+    supabase.from("chat_messages").select("*").eq("user_id", user.id).order("created_at", { ascending: true }),
   ]);
 
   return {
@@ -471,18 +514,15 @@ export async function exportUserData() {
 
 export async function deleteUserAccount() {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await supabase.auth.getUser();
 
   if (!user) {
     return { error: { message: "Not authenticated" } as DatabaseError };
   }
 
-  await supabase.from("chat_messages").delete().eq("user_id", user.id);
-  await supabase.from("remedy_ratings").delete().eq("user_id", user.id);
-  await supabase.from("saved_remedies").delete().eq("user_id", user.id);
-  await supabase.from("consultations").delete().eq("user_id", user.id);
-  await supabase.from("user_preferences").delete().eq("user_id", user.id);
-  await supabase.from("profiles").delete().eq("id", user.id);
+  // Cascade delete via foreign keys (defined in schema.ts) handles all
+  // dependent rows. We only need to delete the user row.
+  await supabase.from("users").delete().eq("id", user.id);
 
   await supabase.auth.signOut();
 

@@ -100,7 +100,7 @@ export default function SettingsPage() {
     const { data: prefsData } = await getUserPreferences();
     if (prefsData) {
       setPreferences({
-        theme: prefsData.theme || "system",
+        theme: (prefsData.theme as "system" | "light" | "dark") || "system",
         email_notifications: prefsData.email_notifications ?? true,
         reminder_notifications: prefsData.reminder_notifications ?? true,
         preferred_remedy_types: prefsData.preferred_remedy_types || [],
