@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Shield,
   AlertCircle,
+  Sparkles,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -459,11 +460,36 @@ function LoginPageInner() {
           </button>
         </form>
 
+        {/* Magic Link option */}
+        <p
+          style={{
+            textAlign: "center",
+            marginTop: "16px",
+            fontSize: "13px",
+            color: "var(--text-tertiary)",
+          }}
+        >
+          <Link
+            href="/auth/magic-link"
+            style={{
+              color: "var(--primary)",
+              textDecoration: "none",
+              fontWeight: 500,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+            }}
+          >
+            <Sparkles size={12} aria-hidden="true" />
+            Sign in with magic link instead
+          </Link>
+        </p>
+
         {/* Sign Up Link */}
         <p
           style={{
             textAlign: "center",
-            marginTop: "20px",
+            marginTop: "16px",
             fontSize: "14px",
             color: "var(--text-tertiary)",
           }}

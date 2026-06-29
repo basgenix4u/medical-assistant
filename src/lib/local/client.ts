@@ -175,6 +175,29 @@ const auth = {
     });
   },
 
+  async signInWithMagicLink(email: string) {
+    return api("/api/local/auth/magic-link/request", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  async verifyMagicLink(token: string) {
+    const { data, error } = await api<{ session: SupabaseSession }>(
+      "/api/local/auth/magic-link/verify",
+      {
+        method: "POST",
+        body: JSON.stringify({ token }),
+      }
+    );
+    if (error) return { data: null, error };
+    if (data?.session) {
+      setToken(data.session.access_token);
+      notifyAuth("SIGNED_IN", data.session);
+    }
+    return { data: { user: data?.session.user ?? null, session: data?.session ?? null }, error: null };
+  },
+
   async updateUser(args: { password?: string; data?: unknown }) {
     if (!args.password) {
       return { data: null, error: { message: "Password is required" } };

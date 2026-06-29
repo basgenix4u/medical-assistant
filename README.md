@@ -1,6 +1,6 @@
 # Medical Assistant (MedAssist)
 
-A modern web application that provides **general health information** and traditional remedy suggestions for educational purposes only. Built with Next.js 16, React 19, Supabase, and Groq AI.
+A production-ready Next.js 16 web app providing **general health information** and traditional remedy suggestions. Built with a **fully self-hosted backend** — no external services required (Supabase, Firebase, etc.).
 
 🔗 **Live Demo:** https://medical-assistant-ashen.vercel.app  
 👤 **Author:** [Abdulbasit Abdulalim](https://github.com/basgenix4u)
@@ -9,185 +9,215 @@ A modern web application that provides **general health information** and tradit
 
 ---
 
-## Overview
-
-MedAssist demonstrates how AI-enabled user experiences can support basic health information collection, symptom guidance, and personalized dashboards. The interface is designed with accessibility, responsive design, and progressive web app behavior in mind.
-
-Every response from the AI is explicitly labeled as **informational only**. The system includes safety guardrails that:
-
-- Detect emergency keywords (chest pain, can't breathe, suicidal ideation, etc.) and surface a prominent emergency-services banner.
-- Refuse to impersonate a licensed medical professional.
-- Refuse to provide definitive diagnoses or prescription advice.
-- Recommend seeing a qualified healthcare provider for any concerning symptoms.
-
----
-
-## Key Features
-
-- **Symptom analysis** with AI (informational only)
-- **Natural remedies** library with search and filtering
-- **AI chat** for general health questions
-- **Emergency escalation** for potential medical emergencies
-- **User dashboard** with consultation history and saved remedies
-- **Authentication** via email, Google, or GitHub (Supabase)
-- **Profile & preferences** including medical conditions, allergies, theme
-- **Progressive Web App** with offline support and install prompt
-- **Accessibility:** skip-to-content link, focus rings, ARIA roles, prefers-reduced-motion
-- **Responsive design** for mobile, tablet, desktop
-
----
-
-## Tech Stack
-
-| Area | Technologies |
-| --- | --- |
-| Framework | Next.js 16 (App Router), React 19 |
-| Language | TypeScript (strict) |
-| Styling | Tailwind CSS v4 + custom CSS variables |
-| Animation | Framer Motion |
-| AI | Groq (LLaMA 3.3 70B) with Zod schema validation |
-| Backend/Auth | Supabase (Postgres + Auth + RLS) |
-| Validation | Zod (runtime schema validation) |
-| Deployment | Vercel |
-
----
-
-## Project Structure
+## 🏗️ Architecture
 
 ```
-src/
-├── app/                       Next.js App Router
-│   ├── api/                   Authenticated API routes (analyze, chat, remedies, symptoms)
-│   ├── auth/                  Login, signup, password reset, OAuth callback
-│   ├── dashboard/             Protected dashboard (requires AuthGuard)
-│   ├── privacy/               Privacy policy
-│   ├── terms/                 Terms of service
-│   ├── sitemap.ts             SEO sitemap
-│   ├── robots.ts              robots.txt
-│   ├── not-found.tsx          404 page
-│   └── global-error.tsx       App-level error boundary
-├── components/
-│   ├── auth/AuthGuard.tsx     Protects dashboard routes
-│   ├── landing/               Hero, Features, HowItWorks, Testimonials, CTA, Footer, Header
-│   ├── pwa/InstallPrompt.tsx  PWA install prompt
-│   ├── shared/                EmergencyBanner, ThemeToggle, Logo
-│   ├── symptoms/BodyMap.tsx   Interactive body-map symptom selector
-│   ├── remedies/RemedyRating.tsx  Star-rating component for remedies
-│   └── analysis/ExportResults.tsx  Share/download analysis
-├── lib/
-│   ├── ai.ts                  Groq integration with safety guardrails
-│   ├── auth-context.tsx       Auth state + secure updatePassword
-│   ├── database.ts            Supabase CRUD helpers
-│   ├── emergency.ts           Emergency keyword detection
-│   ├── profile-context.tsx    Profile state
-│   ├── rate-limit.ts          Per-IP rate limiter
-│   ├── supabase/              Supabase client/server wrappers
-│   ├── theme-context.tsx      Theme (light/dark/system) state
-│   ├── constants.ts           Static app constants
-│   └── utils.ts               Utility helpers (cn, date, severity)
-├── hooks/usePWA.ts            PWA state hook
-└── types/index.ts             Shared TypeScript types
+Browser ─► Next.js (Vercel/Edge)
+            ├─ Pages & UI (React 19 + Framer Motion)
+            ├─ API Routes (auth + data + AI)
+            ├─ Local Backend
+            │   ├─ libSQL (SQLite / Turso)
+            │   ├─ JWT auth (jose)
+            │   ├─ bcryptjs password hashing
+            │   ├─ Zod input validation
+            │   ├─ Rate limiting (10/min analyze, 20/min chat)
+            │   ├─ Emergency keyword detection
+            │   └─ Application-level authorization (per-user data isolation)
+            └─ AI: Groq LLaMA 3.3 70B (informational prompts, no doctor impersonation)
 ```
+
+**No Supabase, no Firebase, no external auth.** Everything runs in one Next.js app.
 
 ---
 
-## Getting Started
+## ✨ Features
 
-### 1. Clone the repository
+### Authentication
+- **Email + password** (bcrypt-hashed, 12 rounds, strength meter)
+- **Magic-link login** (passwordless, email-only — just enter your email)
+- **Forgot password** via signed JWT link
+- **OAuth-ready** (Google/GitHub button stubs ready for production credentials)
+- JWT session tokens (30-day sessions, HTTP-only cookies)
 
+### AI Safety
+- System prompts **explicitly state** "you are NOT a doctor"
+- **Emergency keyword detection** in 4 languages/keywords: chest pain, can't breathe, suicidal, allergic reaction, etc.
+- Automatic emergency-services UI (911/999/112) shown when emergency detected
+- All responses carry an informational-only disclaimer
+
+### Data
+- 8 tables (users, user_preferences, consultations, saved_remedies, remedy_ratings, chat_messages, sessions)
+- **Cascade delete** via foreign keys
+- **Auto-generated UUIDs** for primary keys
+- **Application-level authorization**: every query enforces user ownership
+
+### UI
+- Polished, professional design with consistent design tokens
+- **WCAG 2.4.7 focus rings** (3px outline + offset, light + dark variants)
+- **Dark mode** support (theme toggle in dashboard sidebar)
+- **Skip-to-content link** for keyboard navigation
+- **Mobile-first** responsive layout
+- **Loading states** with spinners + skeletons
+- **Empty states** with helpful CTAs
+
+---
+
+## 🚀 Quick Start
+
+### 1. Clone & install
 ```bash
 git clone https://github.com/basgenix4u/medical-assistant.git
 cd medical-assistant
-```
-
-### 2. Install dependencies
-
-```bash
 npm install
 ```
 
-### 3. Configure environment variables
-
+### 2. Configure
 ```bash
 cp .env.example .env.local
 ```
 
-Update `.env.local`:
+Edit `.env.local`:
+```bash
+# Required - generate with: openssl rand -base64 32
+AUTH_SECRET="your-random-32-byte-secret"
 
-```txt
-NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
-GROQ_API_KEY="your-groq-api-key"
+# Required for AI features (get one free at https://console.groq.com)
+GROQ_API_KEY="gsk_..."
+
+# Optional - for production email delivery (get one at https://resend.com)
+RESEND_API_KEY="re_..."
+EMAIL_FROM="MedAssist <noreply@yourdomain.com>"
+
+# Optional - defaults to local SQLite at ./data/medassist.db
+# For production, use Turso (https://turso.tech):
+# DATABASE_URL="libsql://your-db.turso.io"
+# DATABASE_AUTH_TOKEN="..."
 ```
 
-### 4. Run the development server
+### 3. Initialize the database
+```bash
+npm run migrate   # Creates all tables in ./data/medassist.db
+```
+
+### 4. Run
+```bash
+npm run dev       # http://localhost:3000
+```
+
+---
+
+## 🌐 Deployment
+
+### Recommended: Vercel + Turso
+1. Create a free [Turso](https://turso.tech) account + database
+2. Push this repo to GitHub
+3. Import in [Vercel](https://vercel.com)
+4. Set environment variables:
+   - `AUTH_SECRET` (generate with `openssl rand -base64 32`)
+   - `GROQ_API_KEY`
+   - `DATABASE_URL` (Turso connection string)
+   - `DATABASE_AUTH_TOKEN` (Turso token)
+5. Deploy 🚀
+
+> **Note:** Vercel's `/tmp` is ephemeral. For production data persistence, **always use Turso** (free tier: 9 GB, 500 DBs, 1B row reads/mo).
+
+### Self-hosted (Railway, Render, Fly.io)
+1. Use the default SQLite (no Turso needed)
+2. Mount a persistent volume at `./data`
+3. Set the same env vars as above (minus DATABASE_URL)
+
+---
+
+## 📁 Project Structure
+
+```
+src/
+├── app/
+│   ├── api/local/                  All API routes (auth + data)
+│   ├── auth/                       Login, signup, magic-link, reset
+│   ├── dashboard/                  Protected dashboard (AuthGuard)
+│   ├── privacy/, terms/            Legal pages
+│   ├── offline/                    PWA offline fallback
+│   ├── sitemap.ts, robots.ts       SEO
+│   ├── not-found.tsx, global-error.tsx
+│   └── layout.tsx                  Root layout (Theme, Auth, Profile providers)
+├── components/
+│   ├── auth/AuthGuard.tsx          Protects dashboard routes
+│   ├── landing/                     Marketing (Hero, Features, HowItWorks, etc.)
+│   ├── shared/                      EmergencyBanner, ThemeToggle, Logo, SkipLink
+│   ├── pwa/InstallPrompt.tsx
+│   ├── symptoms/BodyMap.tsx        Interactive SVG body map
+│   ├── analysis/ExportResults.tsx   Share/download analysis
+│   └── remedies/RemedyRating.tsx    Star rating UI
+├── lib/
+│   ├── ai.ts                       Groq integration + Zod schema validation
+│   ├── emergency.ts                Keyword-based emergency detection
+│   ├── rate-limit.ts                Per-IP token bucket
+│   ├── email/                      Resend integration (with dev fallback)
+│   ├── auth/                       JWT + bcrypt helpers
+│   ├── db/                         libSQL client + schema migrations
+│   ├── local/                      Supabase-shaped client (auth.X + from())
+│   ├── constants.ts                Static app data
+│   └── utils.ts                    cn(), date formatters, etc.
+└── hooks/
+    └── usePWA.ts                    Service worker state
+
+scripts/
+├── migrate.ts                      Run schema migrations
+└── seed.ts                         Verify DB initialization
+```
+
+---
+
+## 🧪 Testing
+
+All pages verified end-to-end:
 
 ```bash
-npm run dev
+# Public pages
+curl http://localhost:3000/         # 200
+curl http://localhost:3000/terms    # 200
+curl http://localhost:3000/privacy  # 200
+
+# Auth
+curl -X POST http://localhost:3000/api/local/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"TestPass123"}'
+# → 200 with session token
+
+curl -X POST http://localhost:3000/api/local/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"TestPass123"}'
+# → 200 with session token
+
+# Magic link
+curl -X POST http://localhost:3000/api/local/auth/magic-link/request \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com"}'
+# → 200, link printed to console in dev or emailed in production
+
+# Data
+curl -X POST http://localhost:3000/api/local/data/query \
+  -H "Authorization: Bearer <session>" \
+  -H "Content-Type: application/json" \
+  -d '{"table":"consultations","mode":"select"}'
+# → 200 with array of user's consultations
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+---
+
+## 🔐 Security
+
+- **bcrypt** password hashing (12 rounds, ~250ms)
+- **JWT** sessions (30 days) via `jose`
+- **CSRF**: same-origin only via SameSite=Lax cookies
+- **CSP, HSTS, X-Frame-Options, Referrer-Policy**: in `next.config.ts`
+- **Rate limiting**: 10 req/min/IP for analyze, 20/min for chat, 5/min for magic-link
+- **Application-level authorization**: every query enforces `WHERE user_id = auth.uid()`
+- **Emergency escalation**: hard-coded bypass of LLM for life-threatening symptoms
 
 ---
 
-## Available Scripts
+## 📝 License
 
-```bash
-npm run dev          # Start local development server
-npm run build        # Build production app
-npm run start        # Start production server
-npm run lint         # Run ESLint
-npm run lint:fix     # Auto-fix lint errors
-npm run typecheck    # TypeScript type-check (no emit)
-npm run audit:deps   # npm audit with high-severity threshold
-```
-
----
-
-## Security
-
-- All `/api/*` routes require authentication (Supabase JWT).
-- Per-IP rate limiting on AI endpoints (10/min analyze, 20/min chat).
-- Emergency keyword detection in `/lib/emergency.ts` short-circuits LLM.
-- Zod runtime validation on all request bodies.
-- Security headers: CSP, HSTS, X-Frame-Options, Referrer-Policy, Permissions-Policy.
-- Password changes require current-password verification.
-- `next.config.ts` enforces TypeScript errors in builds.
-
-For vulnerability reports, see [SECURITY.md](./SECURITY.md).
-
----
-
-## Deployment
-
-This project is deployed to Vercel. To deploy your own instance:
-
-1. Create a Supabase project and run the SQL migrations in `supabase/migrations/`.
-2. Set up Groq and obtain an API key.
-3. Connect this repo to Vercel and set the three environment variables.
-4. Configure Supabase Auth redirect URLs to include your production domain.
-
----
-
-## Roadmap
-
-- [x] Authentication, dashboard, AI analysis, chat, remedies
-- [x] Emergency detection + escalation banner
-- [x] Zod validation, rate limiting, security headers
-- [x] Sitemap, robots, /terms, /privacy, 404, global-error
-- [ ] RLS policies and DB migrations as code
-- [ ] Multi-language support (i18n)
-- [ ] Real-time chat (Supabase Realtime)
-- [ ] E2E tests (Playwright)
-- [ ] Sentry error tracking
-- [ ] Lighthouse CI
-
----
-
-## Author
-
-Built and maintained by **Abdulbasit Abdulalim**.
-
-- GitHub: https://github.com/basgenix4u
-- Website: https://alimswrite.com
-- LinkedIn: https://www.linkedin.com/in/abdulbasit-abdulalim-94a701354
+MIT © 2026 Abdulbasit Abdulalim

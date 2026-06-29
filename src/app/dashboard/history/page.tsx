@@ -1,10 +1,17 @@
-// src/app/dashboard/history/page.tsx
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Clock, Calendar, Trash2, Search, Loader2, AlertCircle, FileText } from "lucide-react";
+import {
+  Clock,
+  Calendar,
+  Trash2,
+  Search,
+  Loader2,
+  AlertCircle,
+  FileText,
+  ChevronRight,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { getConsultations, deleteConsultation } from "@/lib/database";
 import Link from "next/link";
@@ -17,7 +24,6 @@ interface ConsultationItem {
   severity_level?: number;
   ai_severity?: string;
   created_at?: string;
-  recommendations?: string[];
   warning_flags?: string[];
 }
 
@@ -30,10 +36,8 @@ export default function HistoryPage() {
 
   const loadConsultations = useCallback(async () => {
     setLoading(true);
-    const { data } = await getConsultations();
-    if (data) {
-      setConsultations(data as ConsultationItem[]);
-    }
+    const { data } = await getConsultations(50);
+    if (data && Array.isArray(data)) setConsultations(data as ConsultationItem[]);
     setLoading(false);
   }, []);
 
@@ -46,15 +50,13 @@ export default function HistoryPage() {
   }, [user, loadConsultations]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this consultation?")) return;
-
+    if (!confirm("Delete this consultation from your history?")) return;
     setDeleting(id);
     const { error } = await deleteConsultation(id);
-
     if (error) {
       toast.error("Failed to delete");
     } else {
-      toast.success("Deleted successfully");
+      toast.success("Deleted");
       setConsultations(consultations.filter((c) => c.id !== id));
     }
     setDeleting(null);
@@ -69,29 +71,18 @@ export default function HistoryPage() {
     );
   });
 
-  const getSeverityColor = (level?: number) => {
-    if (!level) return { bg: "#f3f4f6", text: "#6b7280" };
-    if (level <= 3) return { bg: "#dcfce7", text: "#16a34a" };
-    if (level <= 6) return { bg: "#fef3c7", text: "#d97706" };
-    if (level <= 8) return { bg: "#ffedd5", text: "#ea580c" };
-    return { bg: "#fee2e2", text: "#dc2626" };
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "Unknown date";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   if (!user) {
     return (
-      <div style={{ maxWidth: "600px", margin: "0 auto", textAlign: "center", padding: "60px 20px" }}>
+      <div
+        style={{
+          maxWidth: "600px",
+          margin: "0 auto",
+          textAlign: "center",
+          padding: "60px 20px",
+        }}
+      >
         <div
+          aria-hidden="true"
           style={{
             width: "80px",
             height: "80px",
@@ -103,11 +94,11 @@ export default function HistoryPage() {
             margin: "0 auto 24px",
           }}
         >
-          <Clock size={40} style={{ color: "var(--primary)" }} />
+          <Clock size={40} style={{ color: "var(--primary)" }} aria-hidden="true" />
         </div>
         <h1 style={{ fontSize: "24px", marginBottom: "12px" }}>Consultation History</h1>
         <p style={{ color: "var(--text-tertiary)", marginBottom: "24px" }}>
-          Sign in to view your consultation history.
+          Sign in to view your past symptom analyses.
         </p>
         <Link
           href="/auth/login"
@@ -122,39 +113,34 @@ export default function HistoryPage() {
             fontWeight: 500,
           }}
         >
-          Sign In
+          Sign in
         </Link>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "60px 20px",
-        }}
-      >
-        <Loader2 size={32} style={{ animation: "spin 1s linear infinite", marginBottom: "12px", color: "var(--primary)" }} />
-        <p style={{ color: "var(--text-tertiary)" }}>Loading history...</p>
       </div>
     );
   }
 
   return (
     <div style={{ maxWidth: "800px" }}>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "24px", marginBottom: "8px" }}>Consultation History</h1>
-        <p style={{ color: "var(--text-tertiary)" }}>View and manage your past symptom analyses</p>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{ marginBottom: "32px" }}
+      >
+        <h1 style={{ fontSize: "28px", marginBottom: "8px" }}>Consultation History</h1>
+        <p style={{ color: "var(--text-tertiary)" }}>
+          {consultations.length === 0
+            ? "Your past analyses will appear here."
+            : `${consultations.length} ${consultations.length === 1 ? "analysis" : "analyses"} saved`}
+        </p>
       </motion.div>
 
-      {/* Search */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} style={{ marginBottom: "24px" }}>
-        <div style={{ position: "relative" }}>
+      {consultations.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          style={{ marginBottom: "24px", position: "relative" }}
+        >
           <Search
             size={18}
             style={{
@@ -164,127 +150,207 @@ export default function HistoryPage() {
               transform: "translateY(-50%)",
               color: "var(--text-tertiary)",
             }}
+            aria-hidden="true"
           />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search symptoms..."
+            placeholder="Search by symptom or description..."
+            aria-label="Search history"
             style={{
               width: "100%",
-              padding: "14px 14px 14px 44px",
+              padding: "12px 14px 12px 44px",
               fontSize: "15px",
               border: "1px solid var(--border-light)",
               borderRadius: "12px",
-              background: "var(--bg-secondary)",
+              background: "var(--bg-tertiary)",
               outline: "none",
             }}
           />
+        </motion.div>
+      )}
+
+      {loading ? (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            padding: "60px 20px",
+            color: "var(--text-tertiary)",
+          }}
+        >
+          <Loader2
+            size={32}
+            className="animate-spin"
+            style={{ marginBottom: "12px" }}
+            aria-hidden="true"
+          />
+          <p>Loading your history...</p>
         </div>
-      </motion.div>
-
-      {/* Consultation List */}
-      {filteredConsultations.length > 0 ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {filteredConsultations.map((consultation, index) => {
-            const severity = getSeverityColor(consultation.severity_level);
-
-            return (
-              <motion.div
-                key={consultation.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
+      ) : filteredConsultations.length > 0 ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {filteredConsultations.map((c, index) => (
+            <motion.div
+              key={c.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(index * 0.04, 0.3) }}
+              style={{
+                background: "var(--bg-tertiary)",
+                border: "1px solid var(--border-light)",
+                borderRadius: "14px",
+                padding: "18px 20px",
+                transition: "border-color 0.2s ease",
+              }}
+            >
+              <div
                 style={{
-                  background: "var(--bg-tertiary)",
-                  border: "1px solid var(--border-light)",
-                  borderRadius: "16px",
-                  padding: "20px",
-                  transition: "border-color 0.2s ease",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  gap: "16px",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
-                  <div style={{ flex: 1 }}>
-                    {/* Date and Severity */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px", flexWrap: "wrap" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--text-tertiary)", fontSize: "13px" }}>
-                        <Calendar size={14} />
-                        {formatDate(consultation.created_at)}
-                      </div>
-                      {consultation.severity_level && (
-                        <span
-                          style={{
-                            padding: "4px 10px",
-                            borderRadius: "20px",
-                            fontSize: "12px",
-                            fontWeight: 500,
-                            background: severity.bg,
-                            color: severity.text,
-                          }}
-                        >
-                          Severity: {consultation.severity_level}/10
-                        </span>
-                      )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {/* Date + severity row */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      marginBottom: "10px",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        color: "var(--text-tertiary)",
+                        fontSize: "12px",
+                      }}
+                    >
+                      <Calendar size={12} aria-hidden="true" />
+                      {c.created_at
+                        ? new Date(c.created_at).toLocaleString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "Unknown"}
                     </div>
-
-                    {/* Symptoms */}
-                    <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px", textTransform: "capitalize" }}>
-                      {consultation.symptoms.slice(0, 3).join(", ")}
-                      {consultation.symptoms.length > 3 && ` +${consultation.symptoms.length - 3} more`}
-                    </h3>
-
-                    {/* Description Preview */}
-                    {consultation.symptoms_description && (
-                      <p
+                    {c.severity_level && (
+                      <span
                         style={{
-                          fontSize: "14px",
-                          color: "var(--text-tertiary)",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          maxWidth: "500px",
+                          padding: "3px 10px",
+                          borderRadius: "9999px",
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          background:
+                            c.severity_level <= 3
+                              ? "var(--success-bg)"
+                              : c.severity_level <= 6
+                              ? "var(--warning-bg)"
+                              : "var(--error-bg)",
+                          color:
+                            c.severity_level <= 3
+                              ? "#166534"
+                              : c.severity_level <= 6
+                              ? "#854d0e"
+                              : "#991b1b",
                         }}
                       >
-                        {consultation.symptoms_description}
-                      </p>
+                        Severity {c.severity_level}/10
+                      </span>
                     )}
-
-                    {/* Warning Flags */}
-                    {consultation.warning_flags && consultation.warning_flags.length > 0 && (
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "10px", color: "#dc2626", fontSize: "13px" }}>
-                        <AlertCircle size={14} />
-                        {consultation.warning_flags.length} warning{consultation.warning_flags.length > 1 ? "s" : ""}
-                      </div>
+                    {c.warning_flags && c.warning_flags.length > 0 && (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          padding: "3px 10px",
+                          borderRadius: "9999px",
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          background: "var(--error-bg)",
+                          color: "#991b1b",
+                        }}
+                      >
+                        <AlertCircle size={11} aria-hidden="true" />
+                        {c.warning_flags.length} warning
+                        {c.warning_flags.length > 1 ? "s" : ""}
+                      </span>
                     )}
                   </div>
 
-                  {/* Actions */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <button
-                      onClick={() => handleDelete(consultation.id)}
-                      disabled={deleting === consultation.id}
+                  {/* Symptoms */}
+                  <div
+                    style={{
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      color: "var(--text-primary)",
+                      marginBottom: "6px",
+                      textTransform: "capitalize",
+                    }}
+                  >
+                    {Array.isArray(c.symptoms) && c.symptoms.length > 0
+                      ? c.symptoms.slice(0, 3).join(", ") +
+                        (c.symptoms.length > 3
+                          ? ` +${c.symptoms.length - 3} more`
+                          : "")
+                      : "Analysis"}
+                  </div>
+
+                  {c.symptoms_description && (
+                    <div
                       style={{
-                        padding: "10px",
-                        background: "none",
-                        border: "none",
-                        borderRadius: "10px",
-                        cursor: deleting === consultation.id ? "not-allowed" : "pointer",
+                        fontSize: "13px",
                         color: "var(--text-tertiary)",
-                        transition: "all 0.2s ease",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
                       }}
-                      title="Delete"
                     >
-                      {deleting === consultation.id ? (
-                        <Loader2 size={18} className="animate-spin" />
-                      ) : (
-                        <Trash2 size={18} />
-                      )}
-                    </button>
-                  </div>
+                      {c.symptoms_description}
+                    </div>
+                  )}
                 </div>
-              </motion.div>
-            );
-          })}
+
+                {/* Delete button */}
+                <button
+                  type="button"
+                  onClick={() => handleDelete(c.id)}
+                  disabled={deleting === c.id}
+                  aria-label="Delete consultation"
+                  style={{
+                    padding: "8px",
+                    background: "none",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: deleting === c.id ? "not-allowed" : "pointer",
+                    color: "var(--text-tertiary)",
+                    flexShrink: 0,
+                    transition: "color 0.2s ease",
+                  }}
+                  title="Delete"
+                >
+                  {deleting === c.id ? (
+                    <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Trash2 size={18} aria-hidden="true" />
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          ))}
         </div>
       ) : (
         <motion.div
@@ -295,15 +361,25 @@ export default function HistoryPage() {
             padding: "60px 20px",
             background: "var(--bg-tertiary)",
             borderRadius: "16px",
-            border: "1px solid var(--border-light)",
+            border: "1px dashed var(--border-default)",
           }}
         >
-          <FileText size={48} style={{ color: "var(--text-tertiary)", marginBottom: "16px" }} />
+          <FileText
+            size={48}
+            style={{
+              color: "var(--text-tertiary)",
+              margin: "0 auto 16px",
+              display: "block",
+            }}
+            aria-hidden="true"
+          />
           <h3 style={{ fontSize: "18px", marginBottom: "8px" }}>
-            {search ? "No results found" : "No consultations yet"}
+            {search ? "No matches" : "No consultations yet"}
           </h3>
-          <p style={{ color: "var(--text-tertiary)", marginBottom: "24px" }}>
-            {search ? "Try a different search term" : "Start by analyzing your symptoms"}
+          <p style={{ color: "var(--text-tertiary)", marginBottom: "20px" }}>
+            {search
+              ? "Try a different search term"
+              : "Start by analyzing your first symptom"}
           </p>
           {!search && (
             <Link
@@ -311,6 +387,7 @@ export default function HistoryPage() {
               style={{
                 display: "inline-flex",
                 alignItems: "center",
+                gap: "8px",
                 padding: "12px 24px",
                 background: "var(--primary)",
                 color: "white",
@@ -319,18 +396,12 @@ export default function HistoryPage() {
                 fontWeight: 500,
               }}
             >
-              Analyze Symptoms
+              Start analysis
+              <ChevronRight size={16} aria-hidden="true" />
             </Link>
           )}
         </motion.div>
       )}
-
-      <style jsx global>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }

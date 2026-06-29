@@ -29,12 +29,10 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signInWithGoogle: () => Promise<{ error: AuthError | null }>;
   signInWithGithub: () => Promise<{ error: AuthError | null }>;
+  signInWithMagicLink: (email: string) => Promise<{ error: AuthError | null }>;
+  verifyMagicLink: (token: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
-  /**
-   * Update the current user's password. Requires verifying the current
-   * password first to prevent session-hijack → password-lockout attacks.
-   */
   updatePassword: (
     currentPassword: string,
     newPassword: string
@@ -105,6 +103,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
+  const signInWithMagicLink = async (email: string) => {
+    const { error } = await supabase.auth.signInWithMagicLink(email);
+    return { error };
+  };
+
+  const verifyMagicLink = async (token: string) => {
+    const { error } = await supabase.auth.verifyMagicLink(token);
+    return { error };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -155,6 +163,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn,
         signInWithGoogle,
         signInWithGithub,
+        signInWithMagicLink,
+        verifyMagicLink,
         signOut,
         resetPassword,
         updatePassword,

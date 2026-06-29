@@ -33,7 +33,12 @@ export async function POST(request: NextRequest) {
     const token = await createPasswordResetToken(userId);
     const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/reset-password?token=${encodeURIComponent(token)}`;
     // eslint-disable-next-line no-console
-    console.log(`[MedAssist] Password reset link for ${email}: ${resetUrl}`);
+    // Send via email service (falls back to console in dev)
+    const { sendEmail, passwordResetEmail } = await import("@/lib/email");
+    await sendEmail({
+      to: email,
+      ...passwordResetEmail(resetUrl),
+    });
   }
 
   return NextResponse.json({ ok: true });

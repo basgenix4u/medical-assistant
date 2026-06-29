@@ -54,5 +54,28 @@ export async function verifyPasswordResetToken(
   }
 }
 
+// Magic-link tokens: short-lived (1 hour), single use.
+const MAGIC_LINK_DURATION_MS = 1000 * 60 * 60;
+
+export async function createMagicLinkToken(userId: string, email: string): Promise<string> {
+  return await new SignJWT({ sub: userId, email, kind: "magic" })
+    .setProtectedHeader({ alg: ALG })
+    .setIssuedAt()
+    .setExpirationTime(Math.floor((Date.now() + MAGIC_LINK_DURATION_MS) / 1000))
+    .sign(SECRET);
+}
+
+export async function verifyMagicLinkToken(
+  token: string
+): Promise<{ sub: string; email: string } | null> {
+  try {
+    const { payload } = await jwtVerify(token, SECRET);
+    if ((payload as { kind?: string }).kind !== "magic") return null;
+    return { sub: payload.sub as string, email: payload.email as string };
+  } catch {
+    return null;
+  }
+}
+
 export const SESSION_DURATION_SECONDS = SESSION_DURATION_MS / 1000;
 export const RESET_DURATION_SECONDS = RESET_DURATION_MS / 1000;

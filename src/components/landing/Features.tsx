@@ -3,7 +3,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useInView } from "react-intersection-observer";
 import {
   Brain,
   Leaf,
@@ -11,53 +10,57 @@ import {
   MessageCircle,
   History,
   Shield,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react";
+import Link from "next/link";
 
 const features = [
   {
     icon: Brain,
     title: "AI-Powered Analysis",
     description:
-      "Advanced AI analyzes your symptoms to provide informational insights and general health considerations.",
+      "Our AI analyzes your symptoms and provides informational insights. NOT a diagnosis — always consult a clinician.",
+    color: "#7c3aed",
   },
   {
     icon: Leaf,
-    title: "Natural Remedies",
+    title: "Natural Remedies Library",
     description:
-      "Access a comprehensive database of traditional and home remedies from various cultures around the world.",
+      "Browse 100+ traditional and home remedies from cultures around the world, with preparation details.",
+    color: "#16a34a",
   },
   {
     icon: User,
     title: "Interactive Body Map",
     description:
-      "Pinpoint your symptoms on an interactive body map for more accurate analysis and better recommendations.",
+      "Pinpoint your symptoms visually on an interactive body map for more contextual analysis.",
+    color: "#2563eb",
   },
   {
     icon: MessageCircle,
-    title: "24/7 AI Chat Assistant",
+    title: "AI Chat Assistant",
     description:
-      "Get general answers to your health questions anytime with our intelligent conversational assistant.",
+      "Ask general health questions anytime and get thoughtful informational responses.",
+    color: "#db2777",
   },
   {
     icon: History,
-    title: "Health History Tracking",
+    title: "Health History",
     description:
-      "Track your consultations and monitor your health patterns over time for better wellness management.",
+      "Track your consultations and monitor patterns over time. Export your data anytime.",
+    color: "#ea580c",
   },
   {
     icon: Shield,
-    title: "Safety First Approach",
+    title: "Safety First",
     description:
-      "Clear warnings and emergency escalation for serious symptoms that require immediate professional attention.",
+      "Automatic emergency detection. If symptoms suggest danger, we show emergency-services contacts first.",
+    color: "#dc2626",
   },
 ];
 
 export function Features() {
-  const [ref, inView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
-
   return (
     <section
       id="features"
@@ -68,7 +71,6 @@ export function Features() {
       }}
     >
       <div className="container">
-        {/* Section Header */}
         <motion.div
           className="section-header"
           initial={{ opacity: 0, y: 20 }}
@@ -80,19 +82,15 @@ export function Features() {
               display: "inline-flex",
               alignItems: "center",
               gap: "8px",
-              padding: "8px 16px",
-              background: "var(--accent)",
+              padding: "6px 14px",
+              background: "var(--bg-tertiary)",
               borderRadius: "9999px",
+              border: "1px solid var(--border-light)",
               marginBottom: "16px",
             }}
           >
-            <span
-              style={{
-                fontSize: "var(--text-sm)",
-                fontWeight: 500,
-                color: "var(--primary)",
-              }}
-            >
+            <Sparkles size={14} style={{ color: "var(--primary)" }} aria-hidden="true" />
+            <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--primary)" }}>
               Features
             </span>
           </div>
@@ -102,29 +100,47 @@ export function Features() {
           </h2>
           <p>
             Our comprehensive platform combines cutting-edge AI technology with
-            centuries of traditional healing wisdom — all informational,
-            always with safety guardrails.
+            centuries of traditional healing wisdom — all informational, always
+            with safety guardrails.
           </p>
         </motion.div>
 
-        {/* Features Grid */}
         <div
-          ref={ref}
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "var(--space-6)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+            gap: "24px",
           }}
         >
           {features.map((feature, index) => (
             <motion.div
               key={feature.title}
-              className="feature-card"
               initial={{ opacity: 0, y: 30 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: index * 0.1, duration: 0.5 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ delay: index * 0.08, duration: 0.5 }}
+              className="feature-card"
+              style={{ position: "relative", overflow: "hidden" }}
             >
-              <div className="feature-card-icon">
+              <div
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  right: 0,
+                  width: "100px",
+                  height: "100px",
+                  background: feature.color,
+                  opacity: 0.05,
+                  borderRadius: "50%",
+                  filter: "blur(40px)",
+                  pointerEvents: "none",
+                }}
+              />
+              <div
+                className="feature-card-icon"
+                style={{ background: `${feature.color}15`, color: feature.color }}
+              >
                 <feature.icon size={24} aria-hidden="true" />
               </div>
               <h3
@@ -151,30 +167,36 @@ export function Features() {
           ))}
         </div>
 
-        {/* Stats */}
         <motion.div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: "var(--space-6)",
-            marginTop: "var(--space-16)",
-          }}
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.4 }}
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            marginTop: "var(--space-12)",
+          }}
         >
-          {[
-            { value: "100+", label: "Home Remedies" },
-            { value: "50+", label: "Symptoms Covered" },
-            { value: "24/7", label: "AI Availability" },
-            { value: "Free", label: "To Use" },
-          ].map((stat) => (
-            <div key={stat.label} className="stat-card">
-              <div className="stat-value">{stat.value}</div>
-              <div className="stat-label">{stat.label}</div>
-            </div>
-          ))}
+          <Link
+            href="/auth/signup"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "12px 24px",
+              background: "var(--bg-tertiary)",
+              color: "var(--primary)",
+              border: "1px solid var(--border-default)",
+              borderRadius: "10px",
+              textDecoration: "none",
+              fontWeight: 600,
+              fontSize: "15px",
+            }}
+          >
+            Try all features free
+            <ArrowRight size={16} aria-hidden="true" />
+          </Link>
         </motion.div>
       </div>
     </section>

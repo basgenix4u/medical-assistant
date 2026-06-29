@@ -1,59 +1,97 @@
-// src/app/(dashboard)/page.tsx
+// src/app/dashboard/page.tsx
 
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   Stethoscope,
   Leaf,
   MessageCircle,
-  Activity,
-  TrendingUp,
   Clock,
   ChevronRight,
   Sparkles,
+  Activity,
+  Heart,
+  TrendingUp,
+  Shield,
+  AlertCircle,
 } from "lucide-react";
+import { getConsultations } from "@/lib/database";
 
-const quickActions = [
-  {
-    href: "/dashboard/analyze",
-    icon: Stethoscope,
-    title: "Symptom Checker",
-    description: "Analyze your symptoms with AI",
-    color: "#452829",
-  },
-  {
-    href: "/dashboard/remedies",
-    icon: Leaf,
-    title: "Browse Remedies",
-    description: "Explore natural remedies",
-    color: "#16a34a",
-  },
-  {
-    href: "/dashboard/chat",
-    icon: MessageCircle,
-    title: "AI Chat",
-    description: "Ask health questions",
-    color: "#2563eb",
-  },
-];
-
-const stats = [
-  { label: "Remedies Available", value: "100+", icon: Leaf },
-  { label: "Symptoms Covered", value: "50+", icon: Activity },
-  { label: "AI Responses", value: "24/7", icon: Clock },
-];
-
-const recentSymptoms = ["Headache", "Fatigue", "Sore Throat", "Mild Fever"];
+interface RecentConsultation {
+  id: string;
+  symptoms: string[];
+  created_at?: string;
+  severity_level?: number;
+  ai_severity?: string;
+}
 
 export default function DashboardPage() {
+  const [recent, setRecent] = useState<RecentConsultation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [firstName, setFirstName] = useState<string>("");
+
+  useEffect(() => {
+    // Get user's first name from localStorage (set by auth-context)
+    try {
+      const stored = localStorage.getItem("medassist-profile-cache");
+      if (stored) {
+        const p = JSON.parse(stored) as { full_name?: string };
+        if (p.full_name) setFirstName(p.full_name.split(" ")[0]);
+      }
+    } catch { /* ignore */ }
+
+    (async () => {
+      try {
+        const { data } = await getConsultations(5);
+        if (Array.isArray(data)) setRecent(data as RecentConsultation[]);
+      } catch {
+        /* empty state fine */
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
   const greeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning";
     if (hour < 18) return "Good afternoon";
     return "Good evening";
   };
+
+  const stats = [
+    { label: "Analyses", value: recent.length, icon: Activity, color: "var(--info)" },
+    { label: "Remedies", value: "100+", icon: Leaf, color: "var(--success)" },
+    { label: "Symptoms", value: "50+", icon: Heart, color: "var(--primary)" },
+    { label: "AI uptime", value: "24/7", icon: TrendingUp, color: "var(--warning)" },
+  ];
+
+  const quickActions = [
+    {
+      href: "/dashboard/analyze",
+      icon: Stethoscope,
+      title: "Check Symptoms",
+      description: "AI-powered symptom analysis with informational guidance",
+      color: "var(--primary)",
+    },
+    {
+      href: "/dashboard/remedies",
+      icon: Leaf,
+      title: "Browse Remedies",
+      description: "100+ natural remedies with preparation details",
+      color: "var(--success)",
+    },
+    {
+      href: "/dashboard/chat",
+      icon: MessageCircle,
+      title: "Ask AI",
+      description: "General health questions answered conversationally",
+      color: "var(--info)",
+    },
+  ];
 
   return (
     <div style={{ maxWidth: "1100px" }}>
@@ -63,304 +101,384 @@ export default function DashboardPage() {
         animate={{ opacity: 1, y: 0 }}
         style={{ marginBottom: "32px" }}
       >
-        <h1 style={{ fontSize: "28px", marginBottom: "8px" }}>{greeting()}!</h1>
+        <h1 style={{ fontSize: "32px", marginBottom: "8px", fontWeight: 700 }}>
+          {greeting()}{firstName ? `, ${firstName}` : ""}! 👋
+        </h1>
         <p style={{ color: "var(--text-tertiary)", fontSize: "16px" }}>
-          How can we help you today?
+          What would you like to learn about today?
         </p>
       </motion.div>
 
-      {/* Quick Actions */}
+      {/* Stats row */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        style={{ marginBottom: "32px" }}
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+          gap: "16px",
+          marginBottom: "32px",
+        }}
       >
-        <h2 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px" }}>
-          Quick Actions
-        </h2>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "16px",
-          }}
-        >
-          {quickActions.map((action, index) => (
-            <Link
-              key={action.href}
-              href={action.href}
-              style={{ textDecoration: "none" }}
-            >
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 + index * 0.05 }}
-                whileHover={{ y: -4 }}
-                style={{
-                  background: "var(--bg-tertiary)",
-                  border: "1px solid var(--border-light)",
-                  borderRadius: "16px",
-                  padding: "24px",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-              >
-                <div
-                  style={{
-                    width: "48px",
-                    height: "48px",
-                    borderRadius: "12px",
-                    background: `${action.color}15`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: "16px",
-                  }}
-                >
-                  <action.icon size={24} style={{ color: action.color }} />
-                </div>
-                <h3
-                  style={{
-                    fontSize: "17px",
-                    fontWeight: 600,
-                    marginBottom: "6px",
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  {action.title}
-                </h3>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: "var(--text-tertiary)",
-                  }}
-                >
-                  {action.description}
-                </p>
-              </motion.div>
-            </Link>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Stats */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        style={{ marginBottom: "32px" }}
-      >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "16px",
-          }}
-        >
-          {stats.map((stat, index) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 + index * 0.05 }}
+        {stats.map((stat) => (
+          <div
+            key={stat.label}
+            style={{
+              background: "var(--bg-tertiary)",
+              border: "1px solid var(--border-light)",
+              borderRadius: "16px",
+              padding: "20px",
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+            }}
+          >
+            <div
+              aria-hidden="true"
               style={{
-                background: "var(--bg-tertiary)",
-                border: "1px solid var(--border-light)",
+                width: "44px",
+                height: "44px",
                 borderRadius: "12px",
-                padding: "20px",
+                background: `${stat.color}15`,
+                color: stat.color,
                 display: "flex",
                 alignItems: "center",
-                gap: "16px",
+                justifyContent: "center",
+                flexShrink: 0,
               }}
             >
+              <stat.icon size={22} aria-hidden="true" />
+            </div>
+            <div>
               <div
                 style={{
-                  width: "44px",
-                  height: "44px",
-                  borderRadius: "10px",
-                  background: "var(--accent)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  fontSize: "24px",
+                  fontWeight: 700,
+                  color: "var(--text-primary)",
+                  lineHeight: 1,
                 }}
               >
-                <stat.icon size={22} style={{ color: "var(--primary)" }} />
+                {stat.value}
               </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: "24px",
-                    fontWeight: 700,
-                    color: "var(--primary)",
-                    lineHeight: 1,
-                  }}
-                >
-                  {stat.value}
-                </div>
-                <div style={{ fontSize: "13px", color: "var(--text-tertiary)", marginTop: "4px" }}>
-                  {stat.label}
-                </div>
+              <div
+                style={{
+                  fontSize: "13px",
+                  color: "var(--text-tertiary)",
+                  marginTop: "4px",
+                }}
+              >
+                {stat.label}
               </div>
-            </motion.div>
-          ))}
-        </div>
+            </div>
+          </div>
+        ))}
       </motion.div>
 
-      {/* Two Column Layout */}
+      {/* Two-column grid */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: "minmax(0, 2fr) minmax(0, 1fr)",
           gap: "24px",
         }}
         className="grid-2"
       >
-        {/* Start Analysis Card */}
+        {/* Quick Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <h2
+            style={{
+              fontSize: "18px",
+              fontWeight: 600,
+              marginBottom: "16px",
+              color: "var(--text-primary)",
+            }}
+          >
+            Quick Actions
+          </h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {quickActions.map((action, index) => (
+              <motion.div
+                key={action.href}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.25 + index * 0.05 }}
+              >
+                <Link
+                  href={action.href}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                    padding: "20px",
+                    background: "var(--bg-tertiary)",
+                    border: "1px solid var(--border-light)",
+                    borderRadius: "16px",
+                    textDecoration: "none",
+                    transition: "all 0.2s ease",
+                  }}
+                  className="card-hover"
+                >
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      width: "52px",
+                      height: "52px",
+                      borderRadius: "14px",
+                      background: `${action.color}15`,
+                      color: action.color,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <action.icon size={26} aria-hidden="true" />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "var(--text-primary)",
+                        marginBottom: "2px",
+                      }}
+                    >
+                      {action.title}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "var(--text-tertiary)",
+                      }}
+                    >
+                      {action.description}
+                    </div>
+                  </div>
+                  <ChevronRight
+                    size={20}
+                    style={{ color: "var(--text-tertiary)" }}
+                    aria-hidden="true"
+                  />
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Recent + Tip */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          style={{
-            background: "var(--primary)",
-            borderRadius: "16px",
-            padding: "28px",
-            color: "white",
-          }}
+          style={{ display: "flex", flexDirection: "column", gap: "20px" }}
         >
+          {/* Recent activity */}
           <div
             style={{
-              width: "48px",
-              height: "48px",
-              borderRadius: "12px",
-              background: "rgba(255,255,255,0.15)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: "20px",
+              background: "var(--bg-tertiary)",
+              border: "1px solid var(--border-light)",
+              borderRadius: "16px",
+              padding: "20px",
             }}
           >
-            <Sparkles size={24} />
-          </div>
-          <h3 style={{ fontSize: "20px", fontWeight: 600, marginBottom: "8px", color: "white" }}>
-            Start New Analysis
-          </h3>
-          <p style={{ fontSize: "14px", opacity: 0.85, marginBottom: "20px", lineHeight: 1.6 }}>
-            Get AI-powered insights about your symptoms and discover natural remedies.
-          </p>
-          <Link
-            href="/dashboard/analyze"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "12px 20px",
-              background: "white",
-              color: "var(--primary)",
-              borderRadius: "10px",
-              fontSize: "14px",
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-          >
-            Start Now
-            <ChevronRight size={18} />
-          </Link>
-        </motion.div>
-
-        {/* Common Symptoms */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
-          style={{
-            background: "var(--bg-tertiary)",
-            border: "1px solid var(--border-light)",
-            borderRadius: "16px",
-            padding: "28px",
-          }}
-        >
-          <h3 style={{ fontSize: "17px", fontWeight: 600, marginBottom: "16px" }}>
-            Common Symptoms
-          </h3>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-            {recentSymptoms.map((symptom) => (
-              <Link
-                key={symptom}
-                href={`/dashboard/analyze?symptom=${encodeURIComponent(symptom)}`}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "16px",
+              }}
+            >
+              <h2
                 style={{
-                  padding: "10px 16px",
-                  background: "var(--bg-secondary)",
-                  border: "1px solid var(--border-light)",
-                  borderRadius: "8px",
-                  fontSize: "14px",
-                  color: "var(--text-secondary)",
-                  textDecoration: "none",
-                  transition: "all 0.2s ease",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: "var(--text-primary)",
                 }}
               >
-                {symptom}
+                Recent Activity
+              </h2>
+              <Link
+                href="/dashboard/history"
+                style={{
+                  fontSize: "13px",
+                  color: "var(--primary)",
+                  textDecoration: "none",
+                  fontWeight: 500,
+                }}
+              >
+                View all →
               </Link>
-            ))}
+            </div>
+            {loading ? (
+              <div style={{ textAlign: "center", padding: "20px 0", color: "var(--text-tertiary)", fontSize: "13px" }}>
+                Loading...
+              </div>
+            ) : recent.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "20px 0" }}>
+                <Clock
+                  size={32}
+                  style={{
+                    color: "var(--text-tertiary)",
+                    margin: "0 auto 8px",
+                    display: "block",
+                  }}
+                  aria-hidden="true"
+                />
+                <p
+                  style={{
+                    fontSize: "13px",
+                    color: "var(--text-tertiary)",
+                    margin: 0,
+                  }}
+                >
+                  No analyses yet
+                </p>
+                <Link
+                  href="/dashboard/analyze"
+                  style={{
+                    display: "inline-block",
+                    marginTop: "12px",
+                    fontSize: "13px",
+                    color: "var(--primary)",
+                    textDecoration: "none",
+                    fontWeight: 500,
+                  }}
+                >
+                  Start your first →
+                </Link>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {recent.slice(0, 3).map((c) => (
+                  <Link
+                    key={c.id}
+                    href="/dashboard/history"
+                    style={{
+                      display: "block",
+                      padding: "12px 14px",
+                      background: "var(--bg-secondary)",
+                      borderRadius: "10px",
+                      textDecoration: "none",
+                      transition: "background 0.2s ease",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "var(--text-primary)",
+                        marginBottom: "4px",
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {Array.isArray(c.symptoms)
+                        ? c.symptoms.slice(0, 2).join(", ")
+                        : "Analysis"}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "var(--text-tertiary)",
+                      }}
+                    >
+                      {c.created_at
+                        ? new Date(c.created_at).toLocaleDateString()
+                        : "Recent"}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
-          <Link
-            href="/dashboard/analyze"
+
+          {/* Daily health tip */}
+          <div
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              marginTop: "20px",
-              fontSize: "14px",
-              fontWeight: 500,
-              color: "var(--primary)",
-              textDecoration: "none",
+              background: "var(--success-bg)",
+              border: "1px solid var(--success-border)",
+              borderRadius: "16px",
+              padding: "20px",
+              display: "flex",
+              gap: "14px",
             }}
           >
-            View all symptoms
-            <ChevronRight size={16} />
-          </Link>
+            <div
+              aria-hidden="true"
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "10px",
+                background: "var(--success)",
+                color: "white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Sparkles size={20} aria-hidden="true" />
+            </div>
+            <div>
+              <h3
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "#166534",
+                  marginBottom: "4px",
+                }}
+              >
+                Daily Tip
+              </h3>
+              <p
+                style={{
+                  fontSize: "13px",
+                  color: "#166534",
+                  lineHeight: 1.5,
+                  margin: 0,
+                }}
+              >
+                Drink 8 glasses of water daily — supports energy and immunity.
+              </p>
+            </div>
+          </div>
         </motion.div>
       </div>
 
-      {/* Health Tip */}
+      {/* Disclaimer */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
+        role="note"
         style={{
-          marginTop: "24px",
-          padding: "20px 24px",
-          background: "var(--success-bg)",
-          border: "1px solid #bbf7d0",
-          borderRadius: "12px",
+          marginTop: "32px",
+          padding: "16px 20px",
+          background: "var(--bg-secondary)",
+          borderLeft: "3px solid var(--warning)",
+          borderRadius: "10px",
           display: "flex",
           alignItems: "flex-start",
-          gap: "16px",
+          gap: "12px",
+          fontSize: "13px",
+          color: "var(--text-secondary)",
         }}
       >
-        <div
-          style={{
-            width: "40px",
-            height: "40px",
-            borderRadius: "10px",
-            background: "#16a34a",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
-          <TrendingUp size={20} color="white" />
-        </div>
-        <div>
-          <h4 style={{ fontSize: "15px", fontWeight: 600, color: "#166534", marginBottom: "4px" }}>
-            Daily Health Tip
-          </h4>
-          <p style={{ fontSize: "14px", color: "#166534", lineHeight: 1.6 }}>
-            Stay hydrated! Drinking 8 glasses of water daily helps maintain energy levels and
-            supports your immune system.
-          </p>
-        </div>
+        <AlertCircle
+          size={18}
+          style={{ color: "var(--warning)", flexShrink: 0, marginTop: "1px" }}
+          aria-hidden="true"
+        />
+        <span>
+          MedAssist provides <strong>informational content only</strong>. It is not
+          a medical diagnosis. Always consult a qualified healthcare provider.
+          In an emergency, call 911 (US), 999 (UK), or 112 (EU).
+        </span>
       </motion.div>
     </div>
   );
