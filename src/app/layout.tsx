@@ -6,6 +6,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { ProfileProvider } from "@/lib/profile-context";
 import { ThemeProvider } from "@/lib/theme-context";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
+import { SkipLink } from "@/components/shared/SkipLink";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -85,41 +86,7 @@ export default function RootLayout({
         <meta name="msapplication-tap-highlight" content="no" />
       </head>
       <body suppressHydrationWarning>
-        <a
-          href="#main-content"
-          style={{
-            position: "absolute",
-            left: "-9999px",
-            top: "auto",
-            width: "1px",
-            height: "1px",
-            overflow: "hidden",
-          }}
-          onFocus={(e) => {
-            const el = e.currentTarget;
-            el.style.left = "16px";
-            el.style.top = "16px";
-            el.style.width = "auto";
-            el.style.height = "auto";
-            el.style.padding = "12px 24px";
-            el.style.background = "var(--primary)";
-            el.style.color = "white";
-            el.style.borderRadius = "8px";
-            el.style.zIndex = "9999";
-            el.style.fontWeight = "600";
-          }}
-          onBlur={(e) => {
-            const el = e.currentTarget;
-            el.style.left = "-9999px";
-            el.style.top = "auto";
-            el.style.width = "1px";
-            el.style.height = "1px";
-            el.style.padding = "0";
-            el.style.background = "transparent";
-          }}
-        >
-          Skip to main content
-        </a>
+        <SkipLink />
         <ThemeProvider>
           <AuthProvider>
             <ProfileProvider>

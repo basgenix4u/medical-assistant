@@ -1,34 +1,17 @@
 // src/app/auth/callback/route.ts
+// OAuth callback handler. With the local backend, OAuth providers are not
+// configured — this route redirects users back to login with a clear
+// message. Email + password auth works via the local backend.
 
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
-
-/**
- * Validate that a "next" path is a safe relative path to prevent open
- * redirect attacks.
- */
-function safeNext(next: string | null): string {
-  if (!next) return "/dashboard";
-  // Must start with "/" but not "//" (protocol-relative URL)
-  if (!next.startsWith("/") || next.startsWith("//")) return "/dashboard";
-  return next;
-}
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get("code");
-  const next = safeNext(requestUrl.searchParams.get("next"));
-  const origin = requestUrl.origin;
-
-  if (code) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-    if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
-    }
+  const error = requestUrl.searchParams.get("error");
+  if (error) {
+    return NextResponse.redirect(
+      `${requestUrl.origin}/auth/login?error=${encodeURIComponent(error)}`
+    );
   }
-
-  // If there's an error, redirect to login with error message
-  return NextResponse.redirect(`${origin}/auth/login?error=oauth_error`);
+  return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=oauth_not_configured`);
 }

@@ -240,11 +240,11 @@ export default function AnalyzePage() {
       follow_up_recommended: aiResult.see_doctor?.recommended || false,
     };
 
-    const { error } = await saveConsultation(consultationData);
+    const { error } = await saveConsultation(consultationData as unknown as Parameters<typeof saveConsultation>[0]);
 
     if (error) {
       console.error("Supabase Save Error:", error);
-      toast.error(`Save failed: ${error.message || "Unknown database error"}`);
+      toast.error(`Save failed: ${(error as { message?: string })?.message || "Unknown database error"}`);
     } else {
       toast.success("Analysis saved to history!");
     }

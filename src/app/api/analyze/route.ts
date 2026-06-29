@@ -3,49 +3,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { analyzeSymptoms } from "@/lib/ai";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/local/server";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
-// Fallback remedies
-const FALLBACK_REMEDIES = [
-  {
-    id: "1",
-    name: "Ginger Honey Tea",
-    description:
-      "Soothing tea for cold, cough, and sore throat. Ginger has anti-inflammatory properties.",
-    remedy_type: "herbal",
-  },
-  {
-    id: "2",
-    name: "Turmeric Golden Milk",
-    description: "Anti-inflammatory drink for joint pain and immunity support.",
-    remedy_type: "ayurvedic",
-  },
-  {
-    id: "3",
-    name: "Saltwater Gargle",
-    description: "Simple remedy for sore throat and mouth infections.",
-    remedy_type: "home",
-  },
-  {
-    id: "4",
-    name: "Peppermint Steam Inhalation",
-    description: "Clears nasal congestion and relieves headaches.",
-    remedy_type: "herbal",
-  },
-  {
-    id: "5",
-    name: "Chamomile Tea",
-    description: "Calming tea that helps with sleep and anxiety.",
-    remedy_type: "herbal",
-  },
-  {
-    id: "6",
-    name: "Apple Cider Vinegar Tonic",
-    description: "Aids digestion and helps with bloating.",
-    remedy_type: "home",
-  },
-];
+import { DEFAULT_REMEDIES } from "@/lib/local/remedies-data";
+// Map to the simplified shape that the analyze response uses
+const FALLBACK_REMEDIES = DEFAULT_REMEDIES.map((r) => ({
+  id: r.id,
+  name: r.name,
+  description: r.description,
+  remedy_type: r.remedy_type,
+}));
+
 
 const AnalyzeRequestSchema = z.object({
   symptoms: z
@@ -60,9 +29,7 @@ const AnalyzeRequestSchema = z.object({
 export async function POST(request: NextRequest) {
   // Auth check
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json(
       { error: "Unauthorized. Please sign in to use this endpoint." },
@@ -118,19 +85,9 @@ export async function POST(request: NextRequest) {
       severity,
     });
 
-    // Try to fetch remedies from database
-    let remedies = FALLBACK_REMEDIES;
-    try {
-      const { data } = await supabase
-        .from("remedies")
-        .select("*")
-        .limit(6);
-      if (data && data.length > 0) {
-        remedies = data;
-      }
-    } catch (dbError) {
-      console.log("Using fallback remedies");
-    }
+    // Always use the curated fallback remedies list. (Remedies are
+    // static content, not per-user data; no DB lookup needed.)
+    const remedies = FALLBACK_REMEDIES;
 
     // Build response
     const result = {
