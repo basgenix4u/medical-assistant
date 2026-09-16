@@ -5,6 +5,13 @@ A modern web application that provides **general health information** and tradit
 🔗 **Live Demo:** https://medical-assistant-ashen.vercel.app  
 👤 **Author:** [Abdulbasit Abdulalim](https://github.com/basgenix4u)
 
+
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
+[![React](https://img.shields.io/badge/React-19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev)
+[![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
+[![Groq](https://img.shields.io/badge/Groq-LLaMA%203.3-F55036?style=for-the-badge)](https://groq.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](./LICENSE)
+
 > **⚠️ Medical disclaimer:** This project provides **informational content only**. It is NOT a substitute for professional medical advice, diagnosis, or treatment. If you believe you are experiencing a medical emergency, call your local emergency number (911 in the US, 999 in the UK, 112 in the EU) immediately.
 
 ---
@@ -186,8 +193,10 @@ This project is deployed to Vercel. To deploy your own instance:
 
 ## Author
 
-Built and maintained by **Abdulbasit Abdulalim**.
+<div align="center">
 
-- GitHub: https://github.com/basgenix4u
-- Website: https://alimswrite.com
-- LinkedIn: https://www.linkedin.com/in/abdulbasit-abdulalim-94a701354
+Built and maintained by **Abdulbasit Abdulalim**
+
+[GitHub](https://github.com/basgenix4u) · [Website](https://alimswrite.com) · [LinkedIn](https://www.linkedin.com/in/abdulbasit-abdulalim-94a701354)
+
+</div>
