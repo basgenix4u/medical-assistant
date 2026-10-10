@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { runMigrations } from "@/lib/db/schema";
 import { getDb } from "@/lib/db/client";
-import { createClient } from "@/lib/local/server";
+import { getSessionUser } from "@/lib/auth/cookies";
 
 export async function GET() {
   await runMigrations();
-  const supabase = await createClient();
-  const user = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });
   }

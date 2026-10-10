@@ -1,15 +1,13 @@
+// src/app/api/local/auth/logout/route.ts
 import { NextResponse } from "next/server";
-
-const COOKIE_NAME = "medassist-session";
+import { logoutWithToken } from "@/lib/auth/service";
+import { getSessionTokenFromRequest, clearSessionCookie } from "@/lib/auth/cookies";
 
 export async function POST() {
+  // Revoke the session server-side (gap G4), then clear the cookie.
+  const token = await getSessionTokenFromRequest();
+  if (token) await logoutWithToken(token);
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(COOKIE_NAME, "", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 0,
-    path: "/",
-  });
+  clearSessionCookie(res);
   return res;
 }

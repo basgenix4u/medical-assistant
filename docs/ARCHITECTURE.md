@@ -133,6 +133,7 @@ Conventions: TEXT PKs (UUIDs), ISO timestamps via `datetime('now')`, JSON-in-TEX
 | D4 | Optional: `password_resets` table (single-use token hash + expiry) replacing stateless reset JWT | Single-use guarantee without clock skew issues |
 | D5 | `updated_at` maintenance via triggers or app-level writes (app-level preferred for portability) | Auditability |
 | D6 | Document production backup strategy (Turso snapshots / Litestream / scheduled export) | Stage 5 |
+| D7 | Migration 0005: add `medical_conditions` + `allergies` columns to `users` | Aligns the local schema with profile features (previously Supabase-era `profiles`-only) |
 
 **Data classification:** `consultations`, `chat_messages`, `saved_remedies`, `remedy_ratings`, `user_preferences` = **sensitive personal (health-adjacent) data** — encrypted at rest by the DB provider (Turso), access strictly per-user, never logged, exportable/deletable by the user.
 
@@ -153,6 +154,7 @@ Conventions: JSON in/out; `Content-Type: application/json`; errors as `{ error: 
 | POST | `/api/analyze` | session | 10/min/IP | `{ symptoms: string[1..30], description? ≤2000, duration? ≤100, severity? 1..10 }` | `{ severity, conditions[≤5], recommendations[≤8], remedies[], warningFlags[≤5], followUpNeeded, isEmergency?, disclaimer }` |
 | POST | `/api/chat` | session | 20/min/IP | `{ messages: [{role,content≤2000}]≤40, context? ≤2000 }` | `{ reply }` (or emergency script) |
 | GET | `/api/remedies` | session | 60/min/IP | `?q&type&page` | `{ remedies[], total }` |
+| GET | `/api/remedies/rating?remedy_id=` | session | 60/min/IP | — | `{ average, count }` *(new, Stage 3)* |
 | GET | `/api/symptoms` | session | 60/min/IP | `?q&category` | `{ symptoms[], categories[] }` |
 | GET | `/api/local/data/remedies` | session | 60/min/IP | — | user-relevant remedy data |
 | GET | `/api/local/data/symptoms` | session | 60/min/IP | — | symptom catalog |
@@ -265,6 +267,20 @@ Severity: **Critical** = security/data risk, fix before any production traffic �
 | G18 | No production backup/recovery story for the DB | Medium | Turso snapshots / Litestream / scheduled export; document + test restore | 5 |
 | G19 | Accessibility not yet audited against WCAG 2.1 AA | Medium | A11y audit + fixes in Stage 4; Lighthouse a11y ≥ 95 | 4 |
 | G20 | `npm audit` policy + dependency update process undefined | Low | Dependabot/Renovate; audit policy documented | 5 |
+
+**Stage 3 resolution log (2026-10-10):**
+- ✅ G1/G2 — sessions are cookie-only (`HttpOnly`, `Secure`, `SameSite=Strict`); localStorage/Bearer path removed; single auth helper for all routes.
+- ✅ G3 — `AUTH_SECRET` fails fast in production when missing or < 32 chars (`src/lib/env.ts`).
+- ✅ G4 — JWT `jti` + `sessions` table; logout/password-change/reset revoke server-side.
+- ✅ G5 — query endpoint locked to per-table identifier whitelists, forced owner scoping, `password_hash` stripped from results.
+- ✅ G6 — Vitest suite: 33 tests green, 76.45% line coverage on core domain (target ≥ 70%).
+- ✅ G8/G12 — rate limiter trusts proxy headers only with `TRUST_PROXY=1`.
+- ✅ G11 — production CSP drops `unsafe-eval` and all Supabase origins.
+- ✅ G13 — structured redaction-aware logger (`src/lib/logging.ts`) in all rewritten paths.
+- ✅ G14/G15 — mailer abstraction (console dev / Resend prod) + single-use `password_resets` tokens.
+- ◐ G7 — backend Supabase shims + OAuth routes removed; README + landing-component cleanup continues in Stage 4/5.
+- ◐ G16 — CI now runs tests + blocking audit; deploy workflow remains (Stage 5).
+- ⏳ G9, G17, G18, G19, G20 — Stage 4/5.
 
 **Positive findings (keep):** security headers already configured; Zod validation on all routes; emergency keyword short-circuit with safety prompts; parameterized SQL throughout; bcrypt password hashing; rate limiting on AI/auth routes; GDPR-style export/delete; PWA + offline page; legal pages; sitemap/robots; idempotent migrations; `no-store` on API; strict TS + ESLint.
 

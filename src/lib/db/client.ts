@@ -9,7 +9,6 @@
  */
 import { createClient, type Client } from "@libsql/client";
 
-const isProd = process.env.NODE_ENV === "production";
 const filePath = process.env.DATABASE_FILE || "./data/medassist.db";
 
 let _client: Client | null = null;

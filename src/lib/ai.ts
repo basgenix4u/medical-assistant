@@ -3,10 +3,16 @@
 import Groq from "groq-sdk";
 import { z } from "zod";
 import { detectEmergency, buildEmergencyResponse } from "@/lib/emergency";
+import { requireGroqApiKey } from "@/lib/env";
+import { log } from "@/lib/logging";
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+// Lazily initialized so a missing key fails at call time (graceful
+// fallback response) instead of crashing module import.
+let groqClient: Groq | null = null;
+function getGroq(): Groq {
+  if (!groqClient) groqClient = new Groq({ apiKey: requireGroqApiKey() });
+  return groqClient;
+}
 
 // Using Llama 3.3 70B - capable and free tier
 const MODEL = "llama-3.3-70b-versatile";
@@ -48,7 +54,7 @@ export interface AnalysisResponse {
  * - Bounds symptom count
  * - Detects emergency keywords and short-circuits
  */
-function preprocessInput(input: AnalysisInput): AnalysisInput | null {
+export function preprocessAnalysisInput(input: AnalysisInput): AnalysisInput | null {
   if (!Array.isArray(input.symptoms)) return null;
   const symptoms = input.symptoms
     .filter((s): s is string => typeof s === "string")
@@ -101,7 +107,7 @@ export async function analyzeSymptoms(
   rawInput: AnalysisInput
 ): Promise<AnalysisResponse> {
   // Pre-process and validate
-  const input = preprocessInput(rawInput);
+  const input = preprocessAnalysisInput(rawInput);
   if (!input) {
     return {
       severity: "moderate",
@@ -166,7 +172,7 @@ STRICT RULES (you MUST follow these):
 Respond with JSON only. Keep conditions to a maximum of 5.`;
 
   try {
-    const completion = await groq.chat.completions.create({
+    const completion = await getGroq().chat.completions.create({
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
@@ -200,7 +206,7 @@ Respond with JSON only. Keep conditions to a maximum of 5.`;
       followUpNeeded: result.followUpNeeded,
     };
   } catch (error) {
-    console.error("AI Analysis Error:", error);
+    log.error({ msg: "AI analysis failed", error: error instanceof Error ? error.message : String(error) });
 
     // Safe fallback response
     return {
@@ -296,7 +302,7 @@ Remember: you are an informational assistant, not a clinician.`;
       content: m.content,
     }));
 
-    const completion = await groq.chat.completions.create({
+    const completion = await getGroq().chat.completions.create({
       messages: [
         { role: "system", content: systemPrompt },
         ...chatMessages,
@@ -314,7 +320,7 @@ Remember: you are an informational assistant, not a clinician.`;
 
     return response;
   } catch (error) {
-    console.error("AI Chat Error:", error);
+    log.error({ msg: "AI chat failed", error: error instanceof Error ? error.message : String(error) });
 
     return (
       "I'm having trouble connecting right now.\n\n" +
@@ -352,7 +358,7 @@ Include:
 Keep response to ~150 words. End with a disclaimer that this is informational only.`;
 
   try {
-    const completion = await groq.chat.completions.create({
+    const completion = await getGroq().chat.completions.create({
       messages: [
         {
           role: "system",
@@ -371,7 +377,7 @@ Keep response to ~150 words. End with a disclaimer that this is informational on
       ? reply + "\n\n— This information is general and educational only."
       : "Information not available. Please try again.";
   } catch (error) {
-    console.error("AI Remedy Info Error:", error);
+    log.error({ msg: "AI remedy info failed", error: error instanceof Error ? error.message : String(error) });
 
     return (
       `**${safeRemedy}** is a traditional remedy sometimes used for the listed symptoms.\n\n` +

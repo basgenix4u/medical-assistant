@@ -1,9 +1,15 @@
 // src/lib/auth-context.tsx
-
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+  useCallback,
+} from "react";
+import { createClient } from "@/lib/local/client";
 
 interface AuthError {
   message: string;
@@ -16,45 +22,45 @@ interface User {
   user_metadata?: { full_name?: string };
 }
 
-interface Session {
-  access_token: string;
-  user: User;
-}
-
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: AuthError | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    fullName?: string
+  ) => Promise<{ error: AuthError | null }>;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signInWithGoogle: () => Promise<{ error: AuthError | null }>;
-  signInWithGithub: () => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
   /**
-   * Update the current user's password. Requires verifying the current
-   * password first to prevent session-hijack → password-lockout attacks.
+   * Change the signed-in user's password. The current password is verified
+   * SERVER-SIDE before the change (prevents session-hijack → lockout).
    */
   updatePassword: (
     currentPassword: string,
     newPassword: string
-  ) => Promise<{ error: AuthError | { message: string } | null }>;
+  ) => Promise<{ error: AuthError | null }>;
+  /** Reset password with a single-use token from the reset email. */
+  resetPasswordWithToken: (
+    token: string,
+    newPassword: string
+  ) => Promise<{ error: AuthError | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   const supabase = createClient();
 
   const initializeAuth = useCallback(async () => {
     try {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
+      // Session lives in an httpOnly cookie; /api/local/auth/me resolves it.
+      const currentUser = await supabase.auth.getUser();
+      setUser(currentUser);
     } catch (error) {
       console.error("Auth initialization error:", error);
     } finally {
@@ -65,50 +71,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     initializeAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, currentSession) => {
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
+    const { data: subscription } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
         setLoading(false);
       }
     );
 
     return () => {
-      subscription.unsubscribe();
+      subscription.subscription.unsubscribe();
     };
   }, [supabase.auth, initializeAuth]);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       full_name: fullName,
     });
+    if (!error && data?.user) setUser(data.user);
     return { error };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    return { error };
-  };
-
-  const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({ provider: "google" });
-    return { error };
-  };
-
-  const signInWithGithub = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({ provider: "github" });
+    if (!error && data?.user) setUser(data.user);
     return { error };
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
-    setSession(null);
   };
 
   const resetPassword = async (email: string) => {
@@ -116,32 +112,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
-  /**
-   * Update password securely. Verifies the current password via a
-   * signInWithPassword call BEFORE calling supabase.auth.updateUser, so
-   * a stolen session alone cannot lock out the legitimate user.
-   */
-  const updatePassword = async (
-    currentPassword: string,
-    newPassword: string
-  ) => {
-    if (!user?.email) {
-      return { error: { message: "No active session." } };
-    }
-    // Step 1: Verify current password
-    const { error: verifyError } = await supabase.auth.signInWithPassword({
-      email: user.email,
-      password: currentPassword,
-    });
-    if (verifyError) {
-      return {
-        error: { message: "Current password is incorrect." },
-      };
-    }
-    // Step 2: Update password
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
+  const updatePassword = async (currentPassword: string, newPassword: string) => {
+    const { error } = await supabase.auth.changePassword(currentPassword, newPassword);
+    return { error };
+  };
+
+  const resetPasswordWithToken = async (token: string, newPassword: string) => {
+    const { error } = await supabase.auth.resetPasswordWithToken(token, newPassword);
     return { error };
   };
 
@@ -149,15 +126,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        session,
         loading,
         signUp,
         signIn,
-        signInWithGoogle,
-        signInWithGithub,
         signOut,
         resetPassword,
         updatePassword,
+        resetPasswordWithToken,
       }}
     >
       {children}

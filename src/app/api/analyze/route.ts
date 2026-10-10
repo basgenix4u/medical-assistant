@@ -3,8 +3,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { analyzeSymptoms } from "@/lib/ai";
-import { createClient } from "@/lib/local/server";
+import { getSessionUser } from "@/lib/auth/cookies";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { log, getRequestId } from "@/lib/logging";
 
 import { DEFAULT_REMEDIES } from "@/lib/local/remedies-data";
 // Map to the simplified shape that the analyze response uses
@@ -28,8 +29,7 @@ const AnalyzeRequestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   // Auth check
-  const supabase = await createClient();
-  const user = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) {
     return NextResponse.json(
       { error: "Unauthorized. Please sign in to use this endpoint." },
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Analysis Error:", error);
+    log.error({ msg: "analysis failed", requestId: getRequestId(request), error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: "Failed to analyze symptoms. Please try again." },
       { status: 500 }

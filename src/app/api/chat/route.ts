@@ -3,8 +3,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { chatWithAI } from "@/lib/ai";
-import { createClient } from "@/lib/local/server";
+import { getSessionUser } from "@/lib/auth/cookies";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { log, getRequestId } from "@/lib/logging";
 
 const MAX_MESSAGES = 40;
 const MAX_MESSAGE_CONTENT = 2000;
@@ -21,8 +22,7 @@ const ChatRequestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   // Auth check — only signed-in users can spend tokens
-  const supabase = await createClient();
-  const user = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) {
     return NextResponse.json(
       { error: "Unauthorized. Please sign in to use AI chat." },
@@ -93,12 +93,12 @@ export async function POST(request: NextRequest) {
         ],
       });
     } catch (dbErr) {
-      console.warn("Failed to persist chat messages (non-fatal):", dbErr);
+      log.warn({ msg: "failed to persist chat messages (non-fatal)", error: dbErr instanceof Error ? dbErr.message : String(dbErr) });
     }
 
     return NextResponse.json({ message: response });
   } catch (error) {
-    console.error("Chat Error:", error);
+    log.error({ msg: "chat failed", requestId: getRequestId(request), error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: "Failed to get response. Please try again." },
       { status: 500 }

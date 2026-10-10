@@ -1,17 +1,26 @@
 // src/app/auth/reset-password/page.tsx
-
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { Lock, Eye, EyeOff, Loader2, CheckCircle } from "lucide-react";
+import {
+  Lock,
+  Eye,
+  EyeOff,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
-export default function ResetPasswordPage() {
-  const { updatePassword } = useAuth();
+function ResetPasswordInner() {
+  const { resetPasswordWithToken } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -22,26 +31,29 @@ export default function ResetPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!token) {
+      toast.error("Missing reset token. Please request a new link.");
+      return;
+    }
     if (password.length < 8) {
       toast.error("Password must be at least 8 characters");
       return;
     }
-
     if (password !== confirmPassword) {
       toast.error("Passwords do not match");
       return;
     }
 
-    // In the local backend, password reset requires the reset token to be
-    // exchanged for a new password via the auth callback. For simplicity
-    // we instruct the user to re-register (data is theirs to keep).
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
+    const { error } = await resetPasswordWithToken(token, password);
     setLoading(false);
+
+    if (error) {
+      toast.error(error.message || "Failed to reset password");
+      return;
+    }
     setSuccess(true);
-    toast.success(
-      "Your password has been reset. Please sign in with your new password."
-    );
+    toast.success("Password updated. Please sign in.");
     setTimeout(() => router.push("/auth/login"), 2000);
   };
 
@@ -96,6 +108,7 @@ export default function ResetPasswordPage() {
       border: "1px solid var(--border-light)",
       borderRadius: "12px",
       background: "var(--bg-secondary)",
+      color: "var(--text-primary)",
       outline: "none",
     },
     eyeButton: {
@@ -133,6 +146,21 @@ export default function ResetPasswordPage() {
       justifyContent: "center",
       margin: "0 auto 24px",
     },
+    errorIcon: {
+      width: "80px",
+      height: "80px",
+      borderRadius: "50%",
+      background: "var(--warning-bg)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      margin: "0 auto 24px",
+    },
+    link: {
+      color: "var(--primary)",
+      textDecoration: "none",
+      fontWeight: 600,
+    },
   };
 
   if (success) {
@@ -148,8 +176,32 @@ export default function ResetPasswordPage() {
           </div>
           <h1 style={styles.title}>Password Updated!</h1>
           <p style={styles.subtitle}>
-            Your password has been reset successfully. Redirecting to dashboard...
+            Your password has been reset successfully. Redirecting to sign in…
           </p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (!token) {
+    return (
+      <div style={styles.container}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={styles.card}
+        >
+          <div style={styles.errorIcon}>
+            <AlertCircle size={40} style={{ color: "#b45309" }} />
+          </div>
+          <h1 style={styles.title}>Invalid reset link</h1>
+          <p style={styles.subtitle}>
+            This password reset link is missing its token. Please request a new
+            one.
+          </p>
+          <Link href="/auth/forgot-password" style={styles.link}>
+            Request a new link
+          </Link>
         </motion.div>
       </div>
     );
@@ -167,7 +219,8 @@ export default function ResetPasswordPage() {
         </div>
         <h1 style={styles.title}>Set New Password</h1>
         <p style={styles.subtitle}>
-          Create a new password for your account. Make sure it&apos;s at least 6 characters.
+          Create a new password for your account. Make sure it&apos;s at least 8
+          characters.
         </p>
 
         <form onSubmit={handleSubmit}>
@@ -177,14 +230,16 @@ export default function ResetPasswordPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="New password"
+              autoComplete="new-password"
               style={styles.input}
               required
-              minLength={6}
+              minLength={8}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               style={styles.eyeButton}
+              aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
@@ -196,6 +251,7 @@ export default function ResetPasswordPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Confirm new password"
+              autoComplete="new-password"
               style={styles.input}
               required
             />
@@ -209,7 +265,7 @@ export default function ResetPasswordPage() {
             {loading ? (
               <>
                 <Loader2 size={18} className="animate-spin" />
-                Updating...
+                Updating…
               </>
             ) : (
               "Reset Password"
@@ -218,5 +274,13 @@ export default function ResetPasswordPage() {
         </form>
       </motion.div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: "100vh" }} />}>
+      <ResetPasswordInner />
+    </Suspense>
   );
 }

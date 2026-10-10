@@ -1,6 +1,6 @@
 // src/lib/database.ts
 
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/local/client";
 
 import { DEFAULT_REMEDIES } from "@/lib/local/remedies-data";
 
@@ -145,19 +145,17 @@ export async function getRemedyRating(remedyId: string) {
 }
 
 export async function getRemedyAverageRating(remedyId: string) {
-  const supabase = createClient();
-
-  const result = await supabase
-    .from("remedy_ratings")
-    .select("rating")
-    .eq("remedy_id", remedyId);
-
-  const ratings = (result.data as Array<{ rating: number }> | null) || [];
-  if (ratings.length === 0) {
+  try {
+    const res = await fetch(
+      `/api/remedies/rating?remedy_id=${encodeURIComponent(remedyId)}`,
+      { credentials: "same-origin" }
+    );
+    if (!res.ok) return { average: 0, count: 0 };
+    const data = (await res.json()) as { average?: number; count?: number };
+    return { average: Number(data.average ?? 0), count: Number(data.count ?? 0) };
+  } catch {
     return { average: 0, count: 0 };
   }
-  const average = ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length;
-  return { average, count: ratings.length };
 }
 
 // ============================================
@@ -320,12 +318,6 @@ export async function updateProfile(updates: {
     .eq("id", user.id)
     .select()
     .single();
-
-  if (!error && updates.full_name) {
-    await supabase.auth.updateUser({
-      data: { full_name: updates.full_name }
-    });
-  }
 
   return { data, error };
 }

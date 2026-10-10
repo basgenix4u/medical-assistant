@@ -216,7 +216,8 @@ Full contracts (schemas, status codes, rate limits) live in **`docs/ARCHITECTURE
 | GET | `/api/local/auth/oauth/[provider]` | None | OAuth start *(decision pending: implement or remove)* |
 | POST | `/api/analyze` | Session (10/min per IP) | AI symptom analysis |
 | POST | `/api/chat` | Session (rate-limited) | AI health chat |
-| GET | `/api/remedies` | Session | Remedies library |
+| GET | `/api/remedies` | Session | Remedies library (with aggregate ratings) |
+| GET | `/api/remedies/rating?remedy_id=` | Session | Aggregate rating for a remedy |
 | GET | `/api/symptoms` | Session | Symptoms catalog |
 | GET | `/api/local/data/remedies` | Session | User-relevant remedies data |
 | GET | `/api/local/data/symptoms` | Session | Symptoms data |

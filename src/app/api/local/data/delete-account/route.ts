@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { runMigrations } from "@/lib/db/schema";
 import { getDb } from "@/lib/db/client";
-import { createClient } from "@/lib/local/server";
+import { getSessionUser, clearSessionCookie } from "@/lib/auth/cookies";
 
 export async function POST() {
   await runMigrations();
-  const supabase = await createClient();
-  const user = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });
   }
@@ -15,12 +14,6 @@ export async function POST() {
   await db.execute({ sql: "DELETE FROM users WHERE id = ?", args: [user.id] });
 
   const res = NextResponse.json({ ok: true });
-  res.cookies.set("medassist-session", "", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 0,
-    path: "/",
-  });
+  clearSessionCookie(res);
   return res;
 }

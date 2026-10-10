@@ -2,43 +2,46 @@
 "use client";
 
 /**
- * Browser-side local backend client.
- * Provides a Supabase-compatible surface (auth.X, from(...)) so existing
- * client code that was written for Supabase works unchanged.
+ * Browser-side backend client (cookie-based sessions — gaps G1/G2).
  *
- * Internally calls our own /api/local/* endpoints and stores the session
- * token in localStorage. (We do NOT use cookies on the client because
- * cookies need server-side reads via the Server Client for RLS-style
- * auth — for our purposes, bearer-token in localStorage is fine and
- * matches the Supabase anon-key pattern.)
+ * The session JWT lives ONLY in an httpOnly cookie set by the server.
+ * This client never reads, stores, or transmits the token itself; same-origin
+ * fetches include the cookie automatically. It exposes a Supabase-shaped
+ * surface (auth.X, from(...)) so existing client code keeps working.
  */
 
-const TOKEN_KEY = "medassist-session-token";
-
-function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
+// One-time migration: remove any legacy localStorage token from the
+// pre-cookie era (it was XSS-stealable).
+const LEGACY_TOKEN_KEY = "medassist-session-token";
+if (typeof window !== "undefined") {
+  try {
+    window.localStorage.removeItem(LEGACY_TOKEN_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
-function setToken(token: string | null): void {
-  if (typeof window === "undefined") return;
-  if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
+interface ApiUser {
+  id: string;
+  email: string;
+  user_metadata?: { full_name?: string };
+}
+
+interface ApiSession {
+  user: ApiUser;
 }
 
 async function api<T = unknown>(
   path: string,
   init: RequestInit = {}
 ): Promise<{ data: T | null; error: { message: string } | null }> {
-  const token = getToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...((init.headers as Record<string, string>) || {}),
   };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
 
   try {
-    const res = await fetch(path, { ...init, headers });
+    const res = await fetch(path, { ...init, headers, credentials: "same-origin" });
     const text = await res.text();
     let payload: unknown;
     try {
@@ -48,8 +51,7 @@ async function api<T = unknown>(
     }
     if (!res.ok) {
       const errMsg =
-        (payload as { error?: { message?: string } })?.error?.message ||
-        `HTTP ${res.status}`;
+        (payload as { error?: { message?: string } })?.error?.message || `HTTP ${res.status}`;
       return { data: null, error: { message: errMsg } };
     }
     return { data: payload as T, error: null };
@@ -61,53 +63,27 @@ async function api<T = unknown>(
   }
 }
 
-// ========== AUTH OBJECT (Supabase-shaped) ==========
+// ========== AUTH OBJECT (Supabase-shaped, cookie-backed) ==========
 
-interface SupabaseUser {
-  id: string;
-  email: string;
-  user_metadata: { full_name?: string };
-}
+const authListeners = new Set<(event: string, session: ApiSession | null) => void>();
 
-interface SupabaseSession {
-  access_token: string;
-  token_type: "bearer";
-  user: SupabaseUser;
-}
-
-interface AuthState {
-  data: { session: SupabaseSession | null; user: SupabaseUser | null };
-}
-
-const authListeners = new Set<(event: string, session: SupabaseSession | null) => void>();
-
-function notifyAuth(event: string, session: SupabaseSession | null) {
+function notifyAuth(event: string, session: ApiSession | null) {
   for (const cb of authListeners) cb(event, session);
 }
 
-async function authMe(): Promise<SupabaseUser | null> {
-  const result = await api<{ user: SupabaseUser | null }>("/api/local/auth/me");
+async function authMe(): Promise<ApiUser | null> {
+  const result = await api<{ user: ApiUser | null }>("/api/local/auth/me");
   return result.data?.user ?? null;
 }
 
 const auth = {
-  async getSession(): Promise<AuthState> {
-    const token = getToken();
-    if (!token) return { data: { session: null, user: null } };
+  async getSession(): Promise<{ data: { session: ApiSession | null; user: ApiUser | null } }> {
     const user = await authMe();
-    if (!user) {
-      setToken(null);
-      return { data: { session: null, user: null } };
-    }
-    const session: SupabaseSession = {
-      access_token: token,
-      token_type: "bearer",
-      user,
-    };
+    const session = user ? { user } : null;
     return { data: { session, user } };
   },
 
-  async getUser(): Promise<SupabaseUser | null> {
+  async getUser(): Promise<ApiUser | null> {
     return authMe();
   },
 
@@ -117,75 +93,63 @@ const auth = {
     full_name?: string;
     options?: { data?: { full_name?: string } };
   }) {
-    const fullName =
-      args.full_name ?? args.options?.data?.full_name ?? "";
-    const { data, error } = await api<{ session: SupabaseSession }>(
-      "/api/local/auth/signup",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          email: args.email,
-          password: args.password,
-          full_name: fullName,
-        }),
-      }
-    );
-    if (error) return { data: null, error };
-    if (data?.session) {
-      setToken(data.session.access_token);
-      notifyAuth("SIGNED_IN", data.session);
-    }
-    return { data: { user: data?.session.user ?? null, session: data?.session ?? null }, error: null };
+    const fullName = args.full_name ?? args.options?.data?.full_name ?? "";
+    const { data, error } = await api<{ user: ApiUser }>("/api/local/auth/signup", {
+      method: "POST",
+      body: JSON.stringify({
+        email: args.email,
+        password: args.password,
+        full_name: fullName,
+      }),
+    });
+    if (error || !data?.user) return { data: null, error: error ?? { message: "Sign up failed" } };
+    const session: ApiSession = { user: data.user };
+    notifyAuth("SIGNED_IN", session);
+    return { data: { user: data.user, session }, error: null };
   },
 
   async signInWithPassword({ email, password }: { email: string; password: string }) {
-    const { data, error } = await api<{ session: SupabaseSession }>(
-      "/api/local/auth/login",
-      { method: "POST", body: JSON.stringify({ email, password }) }
-    );
-    if (error) return { data: null, error };
-    if (data?.session) {
-      setToken(data.session.access_token);
-      notifyAuth("SIGNED_IN", data.session);
+    const { data, error } = await api<{ user: ApiUser }>("/api/local/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+    if (error || !data?.user) {
+      return { data: null, error: error ?? { message: "Sign in failed" } };
     }
-    return { data: { user: data?.session.user ?? null, session: data?.session ?? null }, error: null };
-  },
-
-  async signInWithOAuth(args: { provider: string; options?: unknown }) {
-    return {
-      data: null,
-      error: {
-        message:
-          `OAuth with ${args.provider} is not yet configured in the local backend. ` +
-          "Please use email + password to sign in.",
-      },
-    };
+    const session: ApiSession = { user: data.user };
+    notifyAuth("SIGNED_IN", session);
+    return { data: { user: data.user, session }, error: null };
   },
 
   async signOut() {
     await api("/api/local/auth/logout", { method: "POST" });
-    setToken(null);
     notifyAuth("SIGNED_OUT", null);
   },
 
-  async resetPasswordForEmail(email: string, _options?: unknown) {
-    return api("/api/local/auth/reset-password", {
+  async resetPasswordForEmail(email: string) {
+    return api<{ ok: boolean; resetUrl?: string }>("/api/local/auth/reset-password", {
       method: "POST",
       body: JSON.stringify({ email }),
     });
   },
 
-  async updateUser(args: { password?: string; data?: unknown }) {
-    if (!args.password) {
-      return { data: null, error: { message: "Password is required" } };
-    }
-    return api("/api/local/auth/update-password", {
+  /** Change password for the signed-in user (requires current password, verified server-side). */
+  async changePassword(currentPassword: string, newPassword: string) {
+    return api<{ ok: boolean }>("/api/local/auth/update-password", {
       method: "POST",
-      body: JSON.stringify({ password: args.password }),
+      body: JSON.stringify({ current_password: currentPassword, password: newPassword }),
     });
   },
 
-  onAuthStateChange(callback: (event: string, session: SupabaseSession | null) => void) {
+  /** Reset password with a single-use token from the reset email. */
+  async resetPasswordWithToken(token: string, newPassword: string) {
+    return api<{ ok: boolean }>("/api/local/auth/update-password", {
+      method: "POST",
+      body: JSON.stringify({ token, password: newPassword }),
+    });
+  },
+
+  onAuthStateChange(callback: (event: string, session: ApiSession | null) => void) {
     authListeners.add(callback);
     // Fire current state once
     (async () => {
@@ -199,10 +163,6 @@ const auth = {
         },
       },
     };
-  },
-
-  async exchangeCodeForSession(_code: string) {
-    return { data: null, error: { message: "OAuth not configured" } };
   },
 };
 
@@ -300,11 +260,12 @@ class QueryBuilder {
     }
   }
 
-  private async execute(): Promise<{ data: unknown; error: { message: string } | null }> {
-    const { table, mode, filters, orderBy, limitN, selectCols, payload, upsertOpts } = this.state;
-    const token = getToken();
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
+  private async execute(): Promise<{
+    data: unknown;
+    error: { message: string } | null;
+  }> {
+    const { table, mode, filters, orderBy, limitN, selectCols, payload, upsertOpts } =
+      this.state;
     const body = {
       table,
       mode,
@@ -318,7 +279,8 @@ class QueryBuilder {
     try {
       const res = await fetch("/api/local/data/query", {
         method: "POST",
-        headers,
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify(body),
       });
       const text = await res.text();

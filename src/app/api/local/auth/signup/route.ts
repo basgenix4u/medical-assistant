@@ -1,12 +1,10 @@
+// src/app/api/local/auth/signup/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { randomUUID } from "crypto";
-import { runMigrations } from "@/lib/db/schema";
-import { getDb } from "@/lib/db/client";
-import { hashPassword, validatePasswordStrength } from "@/lib/auth/password";
-import { createSessionToken, SESSION_DURATION_SECONDS } from "@/lib/auth/jwt";
-
-const COOKIE_NAME = "medassist-session";
+import { signupUser } from "@/lib/auth/service";
+import { setSessionCookie } from "@/lib/auth/cookies";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { log, getRequestId } from "@/lib/logging";
 
 const SignupSchema = z.object({
   email: z.string().email().max(255),
@@ -15,7 +13,24 @@ const SignupSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  await runMigrations();
+  const requestId = getRequestId(request);
+
+  // Rate limit: 5 signups / minute per IP.
+  const rl = rateLimit({
+    key: `signup:${getClientIp(request)}`,
+    limit: 5,
+    windowMs: 60_000,
+  });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: { message: "Too many attempts. Please try again in a minute." } },
+      {
+        status: 429,
+        headers: { "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)) },
+      }
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -29,59 +44,25 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   }
-  const strength = validatePasswordStrength(parsed.data.password);
-  if (!strength.ok) {
+
+  const result = await signupUser(parsed.data);
+  if (result.error) {
     return NextResponse.json(
-      { error: { message: `Weak password: ${strength.errors.join(", ")}` } },
-      { status: 400 }
+      { error: { message: result.error.message } },
+      { status: result.error.status }
     );
   }
 
-  const db = getDb();
-  const email = parsed.data.email.toLowerCase().trim();
-
-  const existing = await db.execute({
-    sql: "SELECT id FROM users WHERE email = ?",
-    args: [email],
-  });
-  if (existing.rows.length > 0) {
-    return NextResponse.json(
-      { error: { message: "An account with this email already exists." } },
-      { status: 409 }
-    );
-  }
-
-  const id = randomUUID();
-  const passwordHash = await hashPassword(parsed.data.password);
-  const fullName = parsed.data.full_name?.trim() || null;
-
-  await db.execute({
-    sql: "INSERT INTO users (id, email, password_hash, full_name) VALUES (?, ?, ?, ?)",
-    args: [id, email, passwordHash, fullName],
-  });
-  await db.execute({
-    sql: "INSERT INTO user_preferences (user_id) VALUES (?)",
-    args: [id],
-  });
-
-  const token = await createSessionToken(id, email);
+  const { user, session } = result.data;
+  // The session token is set ONLY as an httpOnly cookie — never in the body.
   const res = NextResponse.json({
-    session: {
-      access_token: token,
-      token_type: "bearer",
-      user: {
-        id,
-        email,
-        user_metadata: { full_name: fullName || "" },
-      },
+    user: {
+      id: user.id,
+      email: user.email,
+      user_metadata: { full_name: user.full_name || "" },
     },
   });
-  res.cookies.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: SESSION_DURATION_SECONDS,
-    path: "/",
-  });
+  setSessionCookie(res, session.token);
+  log.info({ msg: "signup ok", requestId, userId: user.id });
   return res;
 }

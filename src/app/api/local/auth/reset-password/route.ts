@@ -1,13 +1,32 @@
+// src/app/api/local/auth/reset-password/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { runMigrations } from "@/lib/db/schema";
-import { getDb } from "@/lib/db/client";
-import { createPasswordResetToken } from "@/lib/auth/jwt";
+import { isProd } from "@/lib/env";
+import { requestPasswordReset } from "@/lib/auth/service";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { log, getRequestId } from "@/lib/logging";
 
 const Schema = z.object({ email: z.string().email().max(255) });
 
 export async function POST(request: NextRequest) {
-  await runMigrations();
+  const requestId = getRequestId(request);
+
+  // Rate limit: 3 requests / minute per IP (prevents abuse + enumeration).
+  const rl = rateLimit({
+    key: `reset:${getClientIp(request)}`,
+    limit: 3,
+    windowMs: 60_000,
+  });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: { message: "Too many attempts. Please try again in a minute." } },
+      {
+        status: 429,
+        headers: { "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)) },
+      }
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -19,22 +38,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: { message: "Invalid email" } }, { status: 400 });
   }
 
-  const db = getDb();
-  const email = parsed.data.email.toLowerCase().trim();
-  const result = await db.execute({
-    sql: "SELECT id FROM users WHERE email = ?",
-    args: [email],
-  });
+  // Always returns ok — never reveals whether the account exists.
+  const { resetUrl } = await requestPasswordReset(parsed.data.email);
+  log.info({ msg: "password reset requested", requestId });
 
-  // Always return ok to prevent email enumeration. If user exists, log the
-  // reset link to the server console (in production, send via email provider).
-  if (result.rows.length > 0) {
-    const userId = result.rows[0].id as string;
-    const token = await createPasswordResetToken(userId);
-    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/reset-password?token=${encodeURIComponent(token)}`;
-    // eslint-disable-next-line no-console
-    console.log(`[MedAssist] Password reset link for ${email}: ${resetUrl}`);
-  }
-
-  return NextResponse.json({ ok: true });
+  // In development the console mailer is used; surface the link so the
+  // flow stays testable. Never leak it in production.
+  return NextResponse.json(
+    isProd ? { ok: true } : { ok: true, ...(resetUrl ? { resetUrl } : {}) }
+  );
 }

@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runMigrations } from "@/lib/db/schema";
-import { createClient } from "@/lib/local/server";
+import { getSessionUser } from "@/lib/auth/cookies";
 import { DEFAULT_REMEDIES } from "@/lib/local/remedies-data";
 
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
-  const user = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) {
     return NextResponse.json(
       { error: { message: "Unauthorized" } },

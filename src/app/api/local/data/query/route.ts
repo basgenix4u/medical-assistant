@@ -1,51 +1,20 @@
 // src/app/api/local/data/query/route.ts
+/**
+ * Generic per-user data endpoint — LOCKED DOWN (gap G5).
+ *
+ * All identifiers (table, columns, order) are validated by the query guard
+ * against per-table whitelists before any SQL is built; every query is
+ * force-scoped to the authenticated user; hidden columns (password_hash)
+ * are never returned.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import type { InValue } from "@libsql/client";
+import { randomUUID } from "crypto";
 import { runMigrations } from "@/lib/db/schema";
 import { getDb } from "@/lib/db/client";
-import { createClient } from "@/lib/local/server";
-
-// Whitelist of tables that can be queried, plus allowed columns and
-// per-table RLS rules. This is our application-level authorization layer.
-const ALLOWED_TABLES: Record<
-  string,
-  {
-    ownerColumn: string; // column that must equal authed user id
-    jsonColumns: string[]; // columns stored as JSON-string in DB
-    actualTable?: string; // if set, rewrite the query to use this table
-    allowedModes?: ReadonlyArray<"select" | "insert" | "update" | "delete" | "upsert">;
-  }
-> = {
-  profiles: {
-    ownerColumn: "id",
-    jsonColumns: ["medical_conditions", "allergies"],
-    actualTable: "users",
-  },
-  users: {
-    ownerColumn: "id",
-    jsonColumns: [],
-    allowedModes: ["delete"],
-  },
-  user_preferences: {
-    ownerColumn: "user_id",
-    jsonColumns: ["preferred_remedy_types"],
-  },
-  consultations: {
-    ownerColumn: "user_id",
-    jsonColumns: [
-      "symptoms",
-      "conditions_identified",
-      "recommendations",
-      "suggested_remedies",
-      "warning_flags",
-      "ai_analysis",
-    ],
-  },
-  saved_remedies: { ownerColumn: "user_id", jsonColumns: [] },
-  remedy_ratings: { ownerColumn: "user_id", jsonColumns: [] },
-  chat_messages: { ownerColumn: "user_id", jsonColumns: [] },
-};
+import { getSessionUser } from "@/lib/auth/cookies";
+import { validateQuery, type TableGuard } from "@/lib/local/query-guard";
 
 const FilterSchema = z.object({
   col: z.string().min(1).max(64),
@@ -68,8 +37,7 @@ const QuerySchema = z.object({
 
 export async function POST(request: NextRequest) {
   await runMigrations();
-  const supabase = await createClient();
-  const user = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) {
     return NextResponse.json(
       { error: { message: "Not authenticated" } },
@@ -85,48 +53,32 @@ export async function POST(request: NextRequest) {
   }
   const parsed = QuerySchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: { message: "Invalid query" } },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: { message: "Invalid query" } }, { status: 400 });
   }
 
-  const { table, mode, filters, orderBy, limit, payload } = parsed.data;
-  const cfg = ALLOWED_TABLES[table];
-  if (cfg.allowedModes && !cfg.allowedModes.includes(mode)) {
-    return NextResponse.json(
-      { error: { message: `Operation ${mode} not allowed on table ${table}` } },
-      { status: 400 }
-    );
-  }
-  if (!cfg) {
-    return NextResponse.json(
-      { error: { message: `Unknown table: ${table}` } },
-      { status: 400 }
-    );
+  const validated = validateQuery({ ...parsed.data, userId: user.id });
+  if (!validated.ok) {
+    return NextResponse.json({ error: { message: validated.error } }, { status: 400 });
   }
 
-  const actualTable = cfg.actualTable || table;
+  const { guard, mode, filters, orderBy, limit, payload } = validated;
   const db = getDb();
+  // Every query is force-scoped to the authenticated user.
+  const allFilters = [{ col: guard.ownerColumn, val: user.id }, ...filters];
 
   try {
     if (mode === "select") {
-      // Force user-scope filter unless payload explicitly requests otherwise.
-      const allFilters = [
-        { col: cfg.ownerColumn, op: "eq" as const, val: user.id },
-        ...filters,
-      ];
-      let sql = `SELECT * FROM ${actualTable}`;
-      const args: InValue[] = [];
-      const where = allFilters.map((f) => `${f.col} = ?`).join(" AND ");
-      if (where) sql += ` WHERE ${where}`;
-      args.push(...(allFilters.map((f) => f.val) as InValue[]));
-      if (orderBy) sql += ` ORDER BY ${orderBy.col} ${orderBy.ascending ? "ASC" : "DESC"}`;
+      const where = allFilters.map((f) => `"${f.col}" = ?`).join(" AND ");
+      let sql = `SELECT * FROM "${guard.table}" WHERE ${where}`;
+      const args = allFilters.map((f) => f.val as InValue);
+      if (orderBy) {
+        sql += ` ORDER BY "${orderBy.col}" ${orderBy.ascending ? "ASC" : "DESC"}`;
+      }
       if (limit != null) sql += ` LIMIT ${limit}`;
-      const r = await db.execute({ sql, args: args as InValue[] });
+      const r = await db.execute({ sql, args });
       return NextResponse.json({
         data: r.rows.map((row) =>
-          parseRow(row as Record<string, unknown>, cfg.jsonColumns)
+          parseRow(stripHidden(row as Record<string, unknown>, guard), guard)
         ),
       });
     }
@@ -134,12 +86,11 @@ export async function POST(request: NextRequest) {
     if (mode === "insert") {
       const rowsIn = Array.isArray(payload) ? payload : [payload];
       if (rowsIn.length === 0) return NextResponse.json({ data: [] });
-      const { randomUUID } = await import("crypto");
       // Auto-inject owner column + primary key "id" so clients don't have to.
       const rows = rowsIn.map((r) => {
         const base = r as Record<string, unknown>;
         const next: Record<string, unknown> = { ...base };
-        next[cfg.ownerColumn] = user.id;
+        next[guard.ownerColumn] = user.id;
         if (!("id" in next) || next.id == null || next.id === "") {
           next.id = randomUUID();
         }
@@ -153,11 +104,12 @@ export async function POST(request: NextRequest) {
       for (const row of rows) {
         for (const c of cols) {
           const v = (row as Record<string, unknown>)[c];
-          args.push(serialize(v, cfg.jsonColumns.includes(c)) as InValue);
+          args.push(serialize(v, guard.jsonColumns.includes(c)) as InValue);
         }
       }
-      const sql = `INSERT INTO ${actualTable} (${cols.join(", ")}) VALUES ${placeholders}`;
-      const r = await db.execute({ sql, args: args as InValue[] });
+      const colList = cols.map((c) => `"${c}"`).join(", ");
+      const sql = `INSERT INTO "${guard.table}" (${colList}) VALUES ${placeholders}`;
+      const r = await db.execute({ sql, args });
       return NextResponse.json({
         data: { inserted: rows.length, lastId: String(r.lastInsertRowid) },
       });
@@ -166,66 +118,76 @@ export async function POST(request: NextRequest) {
     if (mode === "update") {
       const p = payload as Record<string, unknown>;
       const cols = Object.keys(p);
-      const sets = cols.map((c) => `${c} = ?`).join(", ");
-      const args = cols.map((c) =>
-        serialize(p[c], cfg.jsonColumns.includes(c))
-      );
-      const allFilters = [
-        { col: cfg.ownerColumn, op: "eq" as const, val: user.id },
-        ...filters,
-      ];
-      const where = allFilters.map((f) => `${f.col} = ?`).join(" AND ");
-      const sql = `UPDATE ${actualTable} SET ${sets} WHERE ${where}`;
-      args.push(...(allFilters.map((f) => f.val) as InValue[]));
+      const sets = cols.map((c) => `"${c}" = ?`).join(", ");
+      const args = cols.map((c) => serialize(p[c], guard.jsonColumns.includes(c)));
+      const where = allFilters.map((f) => `"${f.col}" = ?`).join(" AND ");
+      const sql = `UPDATE "${guard.table}" SET ${sets} WHERE ${where}`;
+      args.push(...(allFilters.map((f) => f.val as InValue)));
       const r = await db.execute({ sql, args: args as InValue[] });
       return NextResponse.json({ data: { updated: Number(r.rowsAffected) } });
     }
 
     if (mode === "delete") {
-      const allFilters = [
-        { col: cfg.ownerColumn, op: "eq" as const, val: user.id },
-        ...filters,
-      ];
-      const where = allFilters.map((f) => `${f.col} = ?`).join(" AND ");
-      const args = allFilters.map((f) => f.val) as InValue[];
-      const sql = `DELETE FROM ${actualTable} WHERE ${where}`;
+      const where = allFilters.map((f) => `"${f.col}" = ?`).join(" AND ");
+      const args = allFilters.map((f) => f.val as InValue);
+      const sql = `DELETE FROM "${guard.table}" WHERE ${where}`;
       await db.execute({ sql, args });
       return NextResponse.json({ data: null });
     }
 
     if (mode === "upsert") {
       const p = payload as Record<string, unknown>;
-      // Force ownership column on insert
-      p[cfg.ownerColumn] = user.id;
+      // Force ownership on insert.
+      p[guard.ownerColumn] = user.id;
       const cols = Object.keys(p);
       const placeholders = cols.map(() => "?").join(", ");
-      const args = cols.map((c) => serialize(p[c], cfg.jsonColumns.includes(c)));
-      const sql = `INSERT OR REPLACE INTO ${actualTable} (${cols.join(", ")}) VALUES (${placeholders})`;
+      const args = cols.map((c) => serialize(p[c], guard.jsonColumns.includes(c)));
+      const colList = cols.map((c) => `"${c}"`).join(", ");
+      const sql = `INSERT OR REPLACE INTO "${guard.table}" (${colList}) VALUES (${placeholders})`;
       const r = await db.execute({ sql, args: args as InValue[] });
-      return NextResponse.json({ data: { upserted: true, lastId: String(r.lastInsertRowid) } });
+      return NextResponse.json({
+        data: { upserted: true, lastId: String(r.lastInsertRowid) },
+      });
     }
 
-    return NextResponse.json({ error: { message: "Unsupported mode" } }, { status: 400 });
-  } catch (e) {
     return NextResponse.json(
-      { error: { message: e instanceof Error ? e.message : "Query failed" } },
+      { error: { message: "Unsupported mode" } },
+      { status: 400 }
+    );
+  } catch {
+    return NextResponse.json(
+      { error: { message: "Query failed" } },
       { status: 500 }
     );
   }
 }
 
-function parseRow(row: Record<string, unknown>, jsonCols: string[]): Record<string, unknown> {
+/** Remove columns that must never reach the client (e.g. password_hash). */
+function stripHidden(
+  row: Record<string, unknown>,
+  guard: TableGuard
+): Record<string, unknown> {
+  if (guard.hiddenColumns.length === 0) return row;
+  const out = { ...row };
+  for (const col of guard.hiddenColumns) delete out[col];
+  return out;
+}
+
+function parseRow(
+  row: Record<string, unknown>,
+  guard: TableGuard
+): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(row)) {
-    if (typeof v === "string" && jsonCols.includes(k)) {
+    if (typeof v === "string" && guard.jsonColumns.includes(k)) {
       try {
         out[k] = JSON.parse(v);
+        continue;
       } catch {
-        out[k] = v;
+        /* fall through */
       }
-    } else {
-      out[k] = v;
     }
+    out[k] = v;
   }
   return out;
 }

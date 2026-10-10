@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { runMigrations } from "@/lib/db/schema";
-import { createClient } from "@/lib/local/server";
+import { getSessionUser } from "@/lib/auth/cookies";
 
 const DEFAULT_SYMPTOMS = [
   { id: "1", name: "Headache", category: "Neurological", body_part: "head" },
@@ -27,8 +27,7 @@ const DEFAULT_SYMPTOMS = [
 
 export async function GET() {
   await runMigrations();
-  const supabase = await createClient();
-  const user = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) {
     return NextResponse.json(
       { error: { message: "Unauthorized" } },
