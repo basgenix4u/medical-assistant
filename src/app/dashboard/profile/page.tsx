@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { User, Loader2, Save, AlertCircle } from "lucide-react";
+import { User, Loader2, Save } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { getProfile, updateProfile } from "@/lib/database";
 import toast from "react-hot-toast";
@@ -110,7 +110,7 @@ export default function ProfilePage() {
         >
           <User size={40} style={{ color: "var(--primary)" }} />
         </div>
-        <h1 style={{ fontSize: "24px", marginBottom: "12px" }}>Your Profile</h1>
+        <h1 className="page-title" style={{ marginBottom: "12px" }}>Your Profile</h1>
         <p style={{ color: "var(--text-tertiary)", marginBottom: "24px" }}>
           Sign in to manage your profile and health information.
         </p>
@@ -133,7 +133,7 @@ export default function ProfilePage() {
   return (
     <div style={{ maxWidth: "700px" }}>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "24px", marginBottom: "8px" }}>Profile Settings</h1>
+        <h1 className="page-title" style={{ marginBottom: "8px" }}>Profile Settings</h1>
         <p style={{ color: "var(--text-tertiary)" }}>Manage your personal information and health details</p>
       </motion.div>
 

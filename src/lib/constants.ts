@@ -1,25 +1,5 @@
 // src/lib/constants.ts
 
-import {
-  Brain,
-  Wind,
-  Utensils,
-  Bone,
-  Sparkles,
-  Heart,
-  Activity,
-  Leaf,
-  Home,
-  ScrollText,
-  MessageCircle,
-  History,
-  Shield,
-  Lightbulb,
-  Cpu,
-  TrendingUp,
-  ClipboardList,
-} from "lucide-react";
-
 export const SYMPTOM_CATEGORIES = [
   { id: "neurological", label: "Neurological", icon: "Brain", color: "purple" },
   { id: "respiratory", label: "Respiratory", icon: "Wind", color: "blue" },

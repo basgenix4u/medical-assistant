@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Star, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
@@ -30,13 +30,7 @@ export function RemedyRating({ remedyId, remedyName, onRatingSubmit }: RemedyRat
   const [showForm, setShowForm] = useState(false);
 
   // Load existing rating
-  useEffect(() => {
-    if (user && remedyId) {
-      loadExistingRating();
-    }
-  }, [user, remedyId]);
-
-  const loadExistingRating = async () => {
+  const loadExistingRating = useCallback(async () => {
     const { data } = await getRemedyRating(remedyId);
     if (data) {
       const rating = data as {
@@ -53,7 +47,13 @@ export function RemedyRating({ remedyId, remedyName, onRatingSubmit }: RemedyRat
       setReview(rating.review_text || "");
       setWouldRecommend(rating.would_recommend ?? null);
     }
-  };
+  }, [remedyId]);
+
+  useEffect(() => {
+    if (user && remedyId) {
+      loadExistingRating();
+    }
+  }, [user, remedyId, loadExistingRating]);
 
   const handleSubmit = async () => {
     if (!user) {
@@ -85,7 +85,7 @@ export function RemedyRating({ remedyId, remedyName, onRatingSubmit }: RemedyRat
         setShowForm(false);
         onRatingSubmit?.();
       }
-    } catch (error) {
+    } catch {
       toast.error("An error occurred");
     } finally {
       setLoading(false);

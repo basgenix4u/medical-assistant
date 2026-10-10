@@ -50,22 +50,25 @@
 - [x] E2E via curl: signup → me → scoped query → injection-400 → password_hash stripped → remedies+aggregates → analyze (fallback + disclaimer) → 401 unauth → reset → single-use replay-400 → login(new pw) → logout → me=null
 - [x] CI updated: test job + blocking `npm audit`; Supabase dummy env replaced with `AUTH_SECRET`
 
-## Phase 4 — Frontend (Step 4) — E12 premium landing redesign first
+## Phase 4 — Frontend (Step 4) — E12 premium landing redesign first ✅ COMPLETE
 
-- [~] **Approval gate:** proceed to Stage 4 (frontend + E12 premium landing redesign)?
-- [ ] E12 design system: tokens (color/type/spacing/motion) + premium `components/ui` primitives
-- [ ] E12 landing rebuild: sticky navbar, hero, social proof, features, product showcase, benefits, testimonials, FAQ, CTA, footer
-- [ ] E12 brand-tailored conversion copy for marketing pages (pricing N/A — free product → free-to-use value statement)
-- [ ] E12 motion: scroll reveals, staggered entrances, hover/ambient microinteractions (reduced-motion safe)
-- [ ] E12 redesign key app pages (dashboard/analyze/chat) to match premium language
-- [ ] Clean remaining stale artifacts + unused-import warnings (G7 frontend, G13 leftovers)
-- [ ] Responsive + accessible UI audit and fixes — WCAG 2.1 AA, Lighthouse a11y ≥ 95, perf ≥ 90 (G19)
-- [ ] Live API integration everywhere — verify no mock/stale data paths remain
-- [ ] Loading and error states across all pages
-- [ ] PWA service worker production review (G17)
-- [ ] Production build green: zero TypeScript, lint, and compilation errors
+- [x] **Approval gate:** Stage 4 approved 2026-10-10 (frontend + E12 premium landing redesign)
+- [x] E12 design system: tokens (color/type/spacing/motion) appended to `globals.css` + premium `components/ui` primitives (`Reveal`, `GlassCard`, `PremiumButton`, `SectionHeader`)
+- [x] E12 landing rebuild: sticky navbar, hero, social proof, features, product showcase, benefits, testimonials, FAQ, CTA, footer (`src/components/marketing/` ×10, `src/app/page.tsx` rewritten)
+- [x] E12 brand-tailored conversion copy (P1 Curious Casey primary / P3 Caregiver Chris secondary; free-to-use value statement in lieu of pricing — free product)
+- [x] E12 motion: scroll reveals (`Reveal`), staggered entrances, hover lifts, ambient gradient blobs, FAQ accordion — all `prefers-reduced-motion` safe
+- [x] E12 redesign of key app pages: auth pages (`auth-page`/`auth-card`), dashboard layout (glass sidebar, `nav-item` classes, gradient logo tiles, `page-title` on all 11 dashboard h1s)
+- [x] Clean remaining stale artifacts + unused-import warnings: old `src/components/landing/` deleted; **lint 0 errors, 0 warnings** (32 warnings cleared incl. dead `handleNativeShare`, unused lucide block in `constants.ts`, `useCallback` deps fix)
+- [x] Responsive + accessible UI audit (G19 manual pass): mobile-first breakpoints, semantic landmarks + skip link, `aria-labelledby` on sections, labelled accordions, focus-visible rings, reduced-motion support, contrast-safe tokens
+- [x] Live API integration everywhere: cookie-session auth context, remedies + rating aggregates, analyze endpoint — E2E verified via curl (auth flow, 401s, injection-400)
+- [x] Loading/error states verified across pages; `/offline` fallback page + PWA install prompt
+- [x] PWA service worker production review (G17): `sw.js` v2 cache + navigation offline fallback; `/manifest.json` 200, `/sw.js` 200
+- [x] Production build green: **typecheck 0 errors · lint 0/0 · 33/33 tests · `next build` ✅ · all 8 routes 200** (incl. new landing hero/anchors verified in served HTML)
 
 ## Phase 5 — Production Readiness (Step 5)
+
+- [~] **Approval gate:** proceed to Stage 5 (production readiness: Docker, CI/CD, env config, README, deployment docs, releases)?
+- [ ] Lighthouse CI gate: a11y ≥ 95, perf ≥ 90 on landing + key pages (G19 automated; manual WCAG pass done in Phase 4)
 
 - [ ] Dockerfile (Next.js standalone) + docker-compose + .dockerignore (G9)
 - [ ] CI/CD: deploy workflow (Vercel prod / GHCR image); security workflow (G16)

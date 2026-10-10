@@ -281,7 +281,7 @@ export default function AnalyzePage() {
               <ArrowLeft size={18} aria-hidden="true" />
             </button>
           )}
-          <h1 style={{ fontSize: "24px", fontWeight: "bold" }}>Symptom Checker</h1>
+          <h1 className="page-title">Symptom Checker</h1>
         </div>
         <p
           style={{

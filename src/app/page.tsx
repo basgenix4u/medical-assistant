@@ -1,22 +1,28 @@
-// src/app/page.tsx
+// src/app/page.tsx — Premium conversion-focused landing (E12)
 
-import { Header } from "@/components/landing/Header";
-import { Hero } from "@/components/landing/Hero";
-import { Features } from "@/components/landing/Features";
-import { HowItWorks } from "@/components/landing/HowItWorks";
-import { Testimonials } from "@/components/landing/Testimonials";
-import { CTA } from "@/components/landing/CTA";
-import { Footer } from "@/components/landing/Footer";
+import { Navbar } from "@/components/marketing/Navbar";
+import { HeroSection } from "@/components/marketing/HeroSection";
+import { SocialProof } from "@/components/marketing/SocialProof";
+import { FeaturesSection } from "@/components/marketing/FeaturesSection";
+import { ProductShowcase } from "@/components/marketing/ProductShowcase";
+import { BenefitsSection } from "@/components/marketing/BenefitsSection";
+import { TestimonialsSection } from "@/components/marketing/TestimonialsSection";
+import { FAQSection } from "@/components/marketing/FAQSection";
+import { CTASection } from "@/components/marketing/CTASection";
+import { Footer } from "@/components/marketing/Footer";
 
 export default function HomePage() {
   return (
     <main id="main-content" className="min-h-screen">
-      <Header />
-      <Hero />
-      <Features />
-      <HowItWorks />
-      <Testimonials />
-      <CTA />
+      <Navbar />
+      <HeroSection />
+      <SocialProof />
+      <FeaturesSection />
+      <ProductShowcase />
+      <BenefitsSection />
+      <TestimonialsSection />
+      <FAQSection />
+      <CTASection />
       <Footer />
     </main>
   );

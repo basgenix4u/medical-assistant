@@ -123,11 +123,11 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <div style={styles.container}>
+      <div className="auth-page">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          style={styles.card}
+          className="auth-card"
         >
           <div style={styles.successIcon}>
             <CheckCircle size={40} style={{ color: "#22c55e" }} />
@@ -147,11 +147,11 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div style={styles.container}>
+    <div className="auth-page">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        style={styles.card}
+        className="auth-card"
       >
         <div style={styles.iconWrapper}>
           <Mail size={28} style={{ color: "var(--primary)" }} />

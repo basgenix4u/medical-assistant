@@ -9,7 +9,6 @@ import {
   Bot,
   User,
   Loader2,
-  Sparkles,
   RefreshCw,
   Lightbulb,
 } from "lucide-react";
@@ -129,7 +128,7 @@ export default function ChatPage() {
         }}
       >
         <div>
-          <h1 style={{ fontSize: "24px", marginBottom: "4px" }}>AI Health Assistant</h1>
+          <h1 className="page-title" style={{ marginBottom: "4px" }}>AI Health Assistant</h1>
           <p style={{ color: "var(--text-tertiary)", fontSize: "14px" }}>
             Ask me anything about symptoms and natural remedies
           </p>

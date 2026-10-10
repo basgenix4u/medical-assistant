@@ -63,7 +63,7 @@ export default function DashboardPage() {
         animate={{ opacity: 1, y: 0 }}
         style={{ marginBottom: "32px" }}
       >
-        <h1 style={{ fontSize: "28px", marginBottom: "8px" }}>{greeting()}!</h1>
+        <h1 className="page-title" style={{ marginBottom: "8px" }}>{greeting()}!</h1>
         <p style={{ color: "var(--text-tertiary)", fontSize: "16px" }}>
           How can we help you today?
         </p>

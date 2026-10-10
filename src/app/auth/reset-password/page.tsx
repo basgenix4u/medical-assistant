@@ -165,11 +165,11 @@ function ResetPasswordInner() {
 
   if (success) {
     return (
-      <div style={styles.container}>
+      <div className="auth-page">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          style={styles.card}
+          className="auth-card"
         >
           <div style={styles.successIcon}>
             <CheckCircle size={40} style={{ color: "#22c55e" }} />
@@ -185,11 +185,11 @@ function ResetPasswordInner() {
 
   if (!token) {
     return (
-      <div style={styles.container}>
+      <div className="auth-page">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          style={styles.card}
+          className="auth-card"
         >
           <div style={styles.errorIcon}>
             <AlertCircle size={40} style={{ color: "#b45309" }} />
@@ -208,11 +208,11 @@ function ResetPasswordInner() {
   }
 
   return (
-    <div style={styles.container}>
+    <div className="auth-page">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        style={styles.card}
+        className="auth-card"
       >
         <div style={styles.iconWrapper}>
           <Lock size={28} style={{ color: "var(--primary)" }} />

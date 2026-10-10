@@ -9,7 +9,6 @@ import {
   Share2,
   Copy,
   Check,
-  FileText,
   Printer,
   X,
   Mail,
@@ -206,7 +205,7 @@ export function ExportResults({ data }: ExportResultsProps) {
       setCopied(true);
       toast.success("Copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
+    } catch {
       toast.error("Failed to copy");
     }
   };
@@ -240,22 +239,6 @@ export function ExportResults({ data }: ExportResultsProps) {
     const subject = encodeURIComponent("MedAssist Health Analysis Report");
     const body = encodeURIComponent(generateTextSummary());
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
-  };
-
-  // Native share (mobile)
-  const handleNativeShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "MedAssist Health Analysis",
-          text: generateTextSummary(),
-        });
-      } catch (error) {
-        // User cancelled or error
-      }
-    } else {
-      setShowModal(true);
-    }
   };
 
   return (

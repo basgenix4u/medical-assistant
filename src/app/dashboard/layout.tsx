@@ -76,7 +76,8 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   const sidebarStyle: React.CSSProperties = {
     width: "260px",
     background: "var(--bg-tertiary)",
-    borderRight: "1px solid var(--border-light)",
+    borderRight: "1px solid var(--glass-border)",
+    boxShadow: "var(--shadow-premium)",
     padding: "24px 16px",
     display: isMobile ? "none" : "flex",
     flexDirection: "column",
@@ -107,24 +108,10 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   const mainStyle: React.CSSProperties = {
     flex: 1,
     marginLeft: isMobile ? 0 : "260px",
-    padding: "24px",
-    paddingTop: isMobile ? "88px" : "24px",
+    padding: "32px",
+    paddingTop: isMobile ? "96px" : "32px",
     minHeight: "100vh",
   };
-
-  const navLinkStyle = (active: boolean): React.CSSProperties => ({
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    padding: "12px 16px",
-    borderRadius: "12px",
-    textDecoration: "none",
-    fontSize: "14px",
-    fontWeight: 500,
-    transition: "all 0.2s ease",
-    background: active ? "var(--primary)" : "transparent",
-    color: active ? "white" : "var(--text-secondary)",
-  });
 
   const handleSignOut = async () => {
     await signOut();
@@ -150,7 +137,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
             style={{
               width: "40px",
               height: "40px",
-              background: "var(--primary)",
+              background: "var(--gradient-cta)",
               borderRadius: "12px",
               display: "flex",
               alignItems: "center",
@@ -174,7 +161,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
               <li key={item.href} style={{ marginBottom: "4px" }}>
                 <Link
                   href={item.href}
-                  style={navLinkStyle(isActive(item.href))}
+                  className={isActive(item.href) ? "nav-item nav-item-active" : "nav-item"}
                   aria-current={isActive(item.href) ? "page" : undefined}
                 >
                   <item.icon size={20} aria-hidden="true" />
@@ -192,7 +179,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
               <li key={item.href} style={{ marginBottom: "4px" }}>
                 <Link
                   href={item.href}
-                  style={navLinkStyle(isActive(item.href))}
+                  className={isActive(item.href) ? "nav-item nav-item-active" : "nav-item"}
                   aria-current={isActive(item.href) ? "page" : undefined}
                 >
                   <item.icon size={20} aria-hidden="true" />
@@ -219,7 +206,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                 width: "40px",
                 height: "40px",
                 borderRadius: "10px",
-                background: "var(--primary)",
+                background: "var(--gradient-cta)",
                 color: "white",
                 display: "flex",
                 alignItems: "center",
@@ -293,7 +280,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
             style={{
               width: "32px",
               height: "32px",
-              background: "var(--primary)",
+              background: "var(--gradient-cta)",
               borderRadius: "8px",
               display: "flex",
               alignItems: "center",
@@ -368,7 +355,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                 style={{
                   width: "40px",
                   height: "40px",
-                  background: "var(--primary)",
+                  background: "var(--gradient-cta)",
                   borderRadius: "12px",
                   display: "flex",
                   alignItems: "center",
@@ -392,7 +379,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                     <Link
                       href={item.href}
                       onClick={() => setMobileMenuOpen(false)}
-                      style={navLinkStyle(isActive(item.href))}
+                      className={isActive(item.href) ? "nav-item nav-item-active" : "nav-item"}
                       aria-current={isActive(item.href) ? "page" : undefined}
                     >
                       <item.icon size={20} aria-hidden="true" />
@@ -420,7 +407,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                   width: "40px",
                   height: "40px",
                   borderRadius: "10px",
-                  background: "var(--primary)",
+                  background: "var(--gradient-cta)",
                   color: "white",
                   display: "flex",
                   alignItems: "center",

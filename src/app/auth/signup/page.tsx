@@ -71,29 +71,13 @@ function SignupPageInner() {
 
   return (
     <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "24px",
-        background:
-          "linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%)",
-      }}
+      className="auth-page"
     >
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        style={{
-          width: "100%",
-          maxWidth: "480px",
-          background: "var(--bg-tertiary)",
-          borderRadius: "24px",
-          padding: "40px",
-          border: "1px solid var(--border-light)",
-          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.08)",
-        }}
+        className="auth-card"
       >
         {/* Logo */}
         <Link

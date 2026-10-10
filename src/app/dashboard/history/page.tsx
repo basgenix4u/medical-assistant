@@ -105,7 +105,7 @@ export default function HistoryPage() {
         >
           <Clock size={40} style={{ color: "var(--primary)" }} />
         </div>
-        <h1 style={{ fontSize: "24px", marginBottom: "12px" }}>Consultation History</h1>
+        <h1 className="page-title" style={{ marginBottom: "12px" }}>Consultation History</h1>
         <p style={{ color: "var(--text-tertiary)", marginBottom: "24px" }}>
           Sign in to view your consultation history.
         </p>
@@ -148,7 +148,7 @@ export default function HistoryPage() {
   return (
     <div style={{ maxWidth: "800px" }}>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "24px", marginBottom: "8px" }}>Consultation History</h1>
+        <h1 className="page-title" style={{ marginBottom: "8px" }}>Consultation History</h1>
         <p style={{ color: "var(--text-tertiary)" }}>View and manage your past symptom analyses</p>
       </motion.div>
 

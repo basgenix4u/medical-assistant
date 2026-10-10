@@ -106,7 +106,7 @@ export default function SavedRemediesPage() {
         >
           <Bookmark size={40} style={{ color: "var(--primary)" }} />
         </div>
-        <h1 style={{ fontSize: "24px", marginBottom: "12px" }}>Saved Remedies</h1>
+        <h1 className="page-title" style={{ marginBottom: "12px" }}>Saved Remedies</h1>
         <p style={{ color: "var(--text-tertiary)", marginBottom: "24px" }}>
           Sign in to view your saved remedies.
         </p>
@@ -149,7 +149,7 @@ export default function SavedRemediesPage() {
   return (
     <div style={{ maxWidth: "800px" }}>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "24px", marginBottom: "8px" }}>Saved Remedies</h1>
+        <h1 className="page-title" style={{ marginBottom: "8px" }}>Saved Remedies</h1>
         <p style={{ color: "var(--text-tertiary)" }}>Your collection of favorite natural remedies</p>
       </motion.div>
 

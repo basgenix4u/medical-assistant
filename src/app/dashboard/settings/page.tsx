@@ -285,7 +285,7 @@ export default function SettingsPage() {
         >
           <Settings size={40} style={{ color: "var(--primary)" }} />
         </div>
-        <h1 style={{ fontSize: "24px", marginBottom: "12px" }}>Settings</h1>
+        <h1 className="page-title" style={{ marginBottom: "12px" }}>Settings</h1>
         <p style={{ color: "var(--text-tertiary)", marginBottom: "24px" }}>
           Sign in to manage your settings.
         </p>
@@ -336,7 +336,7 @@ export default function SettingsPage() {
         animate={{ opacity: 1, y: 0 }}
         style={{ marginBottom: "32px" }}
       >
-        <h1 style={{ fontSize: "24px", marginBottom: "8px" }}>Settings</h1>
+        <h1 className="page-title" style={{ marginBottom: "8px" }}>Settings</h1>
         <p style={{ color: "var(--text-tertiary)" }}>
           Manage your account, preferences, and privacy
         </p>

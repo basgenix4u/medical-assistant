@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runMigrations } from "@/lib/db/schema";
 import { getSessionUser } from "@/lib/auth/cookies";
 import { DEFAULT_REMEDIES } from "@/lib/local/remedies-data";
 

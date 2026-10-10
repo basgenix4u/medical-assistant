@@ -11,7 +11,6 @@ import {
   Sparkles,
   Star,
   Clock,
-  ChevronRight,
   X,
   AlertTriangle,
   CheckCircle,
@@ -90,7 +89,7 @@ export default function RemediesPage() {
         animate={{ opacity: 1, y: 0 }}
         style={{ marginBottom: "24px" }}
       >
-        <h1 style={{ fontSize: "24px", marginBottom: "8px" }}>Natural Remedies</h1>
+        <h1 className="page-title" style={{ marginBottom: "8px" }}>Natural Remedies</h1>
         <p style={{ color: "var(--text-tertiary)" }}>
           Browse our collection of traditional and home remedies
         </p>
