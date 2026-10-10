@@ -8,6 +8,7 @@ const footerLinks = {
     { label: "Features", href: "/#features" },
     { label: "How it works", href: "/#showcase" },
     { label: "Testimonials", href: "/#testimonials" },
+    { label: "Pricing", href: "/#pricing" },
     { label: "FAQ", href: "/#faq" },
   ],
   resources: [
@@ -69,15 +70,7 @@ export function Footer() {
           </p>
         </div>
 
-        <div
-          className="footer-grid"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "2fr 1fr 1fr 1fr",
-            gap: "var(--space-12)",
-            marginBottom: "var(--space-12)",
-          }}
-        >
+        <div className="footer-grid">
           {/* Brand */}
           <div>
             <Logo size="md" />

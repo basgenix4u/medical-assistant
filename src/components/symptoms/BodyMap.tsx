@@ -118,7 +118,7 @@ export function BodyMap({ selectedSymptoms, onSymptomToggle }: BodyMapProps) {
     if (hasSelectedSymptomInPart(part)) {
       return "var(--primary)";
     }
-    return "#E8D1C5";
+    return "var(--bg-secondary)";
   };
 
   return (

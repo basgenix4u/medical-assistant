@@ -49,7 +49,7 @@ export function BenefitsSection() {
           />
         </Reveal>
 
-        <div className="bento" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
+        <div className="bento bento-2">
           {benefits.map((benefit, index) => (
             <Reveal key={benefit.title} delay={index * 0.08}>
               <GlassCard style={{ padding: "var(--space-8)", height: "100%" }}>

@@ -1,32 +1,58 @@
 // src/components/marketing/HeroSection.tsx
 "use client";
 
+import { useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, CheckCircle, ShieldCheck, Sparkles, Stethoscope } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  CheckCircle,
+  Leaf,
+  ShieldCheck,
+  Sparkles,
+  Stethoscope,
+} from "lucide-react";
 import { PremiumButton } from "@/components/ui/PremiumButton";
 
 /** Expo-out easing curve (typed for framer-motion). */
 const EASE_OUT_EXPO: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
-const highlights = [
-  "AI-powered symptom analysis",
-  "Curated natural remedies",
-  "Private health history",
+const trustChips = [
+  "No credit card",
+  "Private by design",
+  "Emergency guidance built in",
 ];
 
 const stats = [
-  { value: "100+", label: "Curated remedies" },
+  { value: "120+", label: "Curated remedies" },
   { value: "24/7", label: "AI guidance" },
-  { value: "Free", label: "Forever" },
+  { value: "$0", label: "Free, forever" },
 ];
 
 export function HeroSection() {
   const prefersReducedMotion = useReducedMotion();
+  const previewRef = useRef<HTMLDivElement>(null);
 
   const entrance = (delay: number) =>
     prefersReducedMotion
       ? {}
-      : { initial: { opacity: 0, y: 24 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.7, delay, ease: EASE_OUT_EXPO } };
+      : {
+          initial: { opacity: 0, y: 24 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.7, delay, ease: EASE_OUT_EXPO },
+        };
+
+  // Gentle pointer parallax on the product mock (desktop, motion-safe only).
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (prefersReducedMotion || !previewRef.current) return;
+    const rect = previewRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    previewRef.current.style.transform = `perspective(1200px) rotateY(${x * 4}deg) rotateX(${y * -4}deg)`;
+  };
+  const handlePointerLeave = () => {
+    if (previewRef.current) previewRef.current.style.transform = "";
+  };
 
   return (
     <section className="hero-premium" aria-labelledby="hero-heading">
@@ -39,8 +65,7 @@ export function HeroSection() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr",
-            gap: "64px",
+            gap: "72px",
             alignItems: "center",
           }}
           className="lg:grid-cols-2"
@@ -50,13 +75,18 @@ export function HeroSection() {
             <motion.div {...entrance(0)}>
               <span className="eyebrow">
                 <span className="eyebrow-dot" aria-hidden="true" />
-                Informational health assistant — not a doctor
+                Informational health assistant — not a diagnosis
               </span>
             </motion.div>
 
-            <motion.h1 id="hero-heading" className="display-1" style={{ marginBottom: "24px" }} {...entrance(0.08)}>
-              Your calm, informed path to{" "}
-              <span className="text-gradient-premium">feeling better</span>
+            <motion.h1
+              id="hero-heading"
+              className="display-1"
+              style={{ marginBottom: "24px" }}
+              {...entrance(0.08)}
+            >
+              Understand your symptoms,{" "}
+              <span className="text-gradient-premium">without the 2 a.m. spiral</span>
             </motion.h1>
 
             <motion.p
@@ -65,30 +95,18 @@ export function HeroSection() {
                 color: "var(--text-secondary)",
                 maxWidth: "520px",
                 lineHeight: "1.7",
-                marginBottom: "32px",
+                marginBottom: "28px",
               }}
               {...entrance(0.16)}
             >
-              MedAssist turns everyday symptoms into clear, informational guidance —
-              AI-powered analysis, a curated library of traditional remedies, and a
-              private history that&apos;s yours alone. Not a diagnosis. Peace of mind.
+              MedAssist turns what you&apos;re feeling into clear, informational
+              guidance — possible explanations, gentle self-care, and when to see a
+              professional. Private by design. Free forever.
             </motion.p>
 
             <motion.div
-              style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "36px" }}
+              style={{ display: "flex", flexWrap: "wrap", gap: "16px", marginBottom: "20px" }}
               {...entrance(0.24)}
-            >
-              {highlights.map((item) => (
-                <div key={item} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <CheckCircle size={20} style={{ color: "var(--success)", flexShrink: 0 }} aria-hidden="true" />
-                  <span style={{ color: "var(--text-secondary)", fontSize: "15px" }}>{item}</span>
-                </div>
-              ))}
-            </motion.div>
-
-            <motion.div
-              style={{ display: "flex", flexWrap: "wrap", gap: "16px", marginBottom: "48px" }}
-              {...entrance(0.32)}
             >
               <PremiumButton href="/auth/signup" variant="primary" size="lg">
                 Start a free analysis
@@ -99,50 +117,89 @@ export function HeroSection() {
               </PremiumButton>
             </motion.div>
 
+            <motion.div className="trust-chips" {...entrance(0.3)}>
+              {trustChips.map((chip) => (
+                <span key={chip} className="trust-chip">
+                  <Check size={12} aria-hidden="true" />
+                  {chip}
+                </span>
+              ))}
+            </motion.div>
+
             <motion.dl
               style={{
                 display: "flex",
                 flexWrap: "wrap",
-                gap: "40px",
+                gap: "48px",
                 paddingTop: "28px",
+                marginTop: "28px",
                 borderTop: "1px solid var(--glass-border)",
-                margin: 0,
+                marginBottom: 0,
               }}
-              {...entrance(0.4)}
+              {...entrance(0.38)}
             >
               {stats.map((stat) => (
                 <div key={stat.label}>
-                  <dt className="stat-premium-value" style={{ margin: 0 }}>{stat.value}</dt>
-                  <dd className="stat-premium-label" style={{ margin: 0 }}>{stat.label}</dd>
+                  <dt className="stat-premium-value" style={{ margin: 0 }}>
+                    {stat.value}
+                  </dt>
+                  <dd className="stat-premium-label" style={{ margin: 0 }}>
+                    {stat.label}
+                  </dd>
                 </div>
               ))}
             </motion.dl>
           </div>
 
-          {/* Right: floating product preview */}
-          <motion.div
-            className="hidden md:block hero-preview"
-            {...entrance(0.3)}
-          >
-            <div className="hero-preview-float">
+          {/* Right: floating product preview with pointer parallax */}
+          <motion.div className="hidden md:block hero-preview" {...entrance(0.3)}>
+            <div
+              className="hero-preview-float"
+              ref={previewRef}
+              onPointerMove={handlePointerMove}
+              onPointerLeave={handlePointerLeave}
+              style={{ transition: "transform 240ms ease-out", transformStyle: "preserve-3d" }}
+            >
               <div className="glass-card" style={{ padding: "var(--space-6)" }}>
                 {/* Window header */}
-                <div className="mock-window-bar" style={{ borderRadius: "var(--radius-lg) var(--radius-lg) 0 0", marginBottom: "var(--space-5)" }}>
+                <div
+                  className="mock-window-bar"
+                  style={{
+                    borderRadius: "var(--radius-lg) var(--radius-lg) 0 0",
+                    marginBottom: "var(--space-5)",
+                  }}
+                >
                   <span className="mock-window-dot" />
                   <span className="mock-window-dot" />
                   <span className="mock-window-dot" />
-                  <span style={{ marginLeft: "8px", fontSize: "12px", color: "var(--text-tertiary)", fontWeight: 600 }}>
+                  <span
+                    style={{
+                      marginLeft: "8px",
+                      fontSize: "12px",
+                      color: "var(--text-tertiary)",
+                      fontWeight: 600,
+                    }}
+                  >
                     MedAssist · Symptom Checker
                   </span>
                 </div>
 
                 {/* Input mock */}
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "var(--space-5)" }}>
-                  <div className="bento-icon" style={{ marginBottom: 0 }}>
-                    <Sparkles size={22} aria-hidden="true" />
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    marginBottom: "var(--space-5)",
+                  }}
+                >
+                  <div className="bento-icon" style={{ marginBottom: 0 }} aria-hidden="true">
+                    <Sparkles size={22} />
                   </div>
                   <div>
-                    <h3 style={{ fontSize: "16px", marginBottom: "2px" }}>Describe how you feel</h3>
+                    <h3 style={{ fontSize: "16px", marginBottom: "2px" }}>
+                      Describe how you feel
+                    </h3>
                     <p style={{ fontSize: "13px", color: "var(--text-tertiary)", margin: 0 }}>
                       Guided, private, and clear
                     </p>
@@ -163,14 +220,24 @@ export function HeroSection() {
                       marginBottom: "8px",
                     }}
                   >
-                    <CheckCircle size={18} style={{ color: "var(--success)" }} aria-hidden="true" />
-                    <span style={{ fontWeight: 500, color: "var(--text-primary)", fontSize: "14px" }}>
+                    <CheckCircle
+                      size={18}
+                      style={{ color: "var(--success)" }}
+                      aria-hidden="true"
+                    />
+                    <span
+                      style={{
+                        fontWeight: 500,
+                        color: "var(--text-primary)",
+                        fontSize: "14px",
+                      }}
+                    >
                       {symptom}
                     </span>
                   </div>
                 ))}
 
-                {/* Result mock */}
+                {/* AI analysis result mock */}
                 <div
                   style={{
                     marginTop: "var(--space-4)",
@@ -180,15 +247,61 @@ export function HeroSection() {
                     borderRadius: "var(--radius-md)",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                    <ShieldCheck size={16} style={{ color: "var(--success)" }} aria-hidden="true" />
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    <ShieldCheck
+                      size={16}
+                      style={{ color: "var(--success)" }}
+                      aria-hidden="true"
+                    />
                     <strong style={{ fontSize: "14px", color: "var(--text-primary)" }}>
                       Analysis ready — informational only
                     </strong>
                   </div>
-                  <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: 0 }}>
+                  <p
+                    style={{
+                      fontSize: "13px",
+                      color: "var(--text-secondary)",
+                      margin: 0,
+                    }}
+                  >
                     3 gentle remedies suggested · see-a-doctor guidance included
                   </p>
+                </div>
+
+                {/* Remedy mini card */}
+                <div className="mock-remedy" style={{ marginTop: "var(--space-3)" }}>
+                  <span className="mock-remedy-icon" aria-hidden="true">
+                    <Leaf size={16} />
+                  </span>
+                  <div style={{ flex: 1 }}>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      Ginger &amp; honey tea
+                    </div>
+                    <div style={{ fontSize: "12px", color: "var(--text-tertiary)" }}>
+                      A classic remedy, with precautions
+                    </div>
+                  </div>
+                  <CheckCircle size={16} style={{ color: "var(--success)" }} aria-hidden="true" />
+                </div>
+
+                {/* Disclaimer strip */}
+                <div className="mock-disclaimer">
+                  <ShieldCheck size={13} style={{ flexShrink: 0 }} aria-hidden="true" />
+                  Informational only — not medical advice. In an emergency, call your
+                  local emergency number.
                 </div>
               </div>
 
@@ -205,9 +318,19 @@ export function HeroSection() {
                   gap: "10px",
                 }}
               >
-                <Stethoscope size={20} style={{ color: "var(--primary)" }} aria-hidden="true" />
+                <Stethoscope
+                  size={20}
+                  style={{ color: "var(--primary)" }}
+                  aria-hidden="true"
+                />
                 <div>
-                  <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)" }}>
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: "var(--text-primary)",
+                    }}
+                  >
                     Safety first
                   </div>
                   <div style={{ fontSize: "12px", color: "var(--text-tertiary)" }}>

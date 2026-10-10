@@ -21,16 +21,34 @@ const EnvSchema = z.object({
   MAIL_FROM: z.string().min(1).optional(),
 });
 
+/**
+ * `next build` (e.g. on Vercel) imports route modules to collect metadata,
+ * which evaluates this module at BUILD time — before project env vars are
+ * guaranteed to exist. Validation must therefore be strict at RUNTIME but
+ * tolerant during the build phase, so a missing secret fails the deployed
+ * app loudly at first request instead of breaking the build itself.
+ */
+const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+
 const parsed = EnvSchema.safeParse(process.env);
 if (!parsed.success) {
-  console.error(
-    "[env] Invalid environment configuration:",
-    JSON.stringify(parsed.error.flatten().fieldErrors)
-  );
-  throw new Error("Invalid environment configuration");
+  const flat = JSON.stringify(parsed.error.flatten().fieldErrors);
+  if (isBuildPhase) {
+    console.warn(`[env] Invalid environment configuration during build (continuing): ${flat}`);
+  } else {
+    console.error("[env] Invalid environment configuration:", flat);
+    throw new Error("Invalid environment configuration");
+  }
 }
 
-export const env = parsed.data;
+type Env = z.infer<typeof EnvSchema>;
+
+const fallbackEnv: Env = {
+  NODE_ENV: (process.env.NODE_ENV as Env["NODE_ENV"]) || "development",
+  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+};
+
+export const env: Env = parsed.success ? parsed.data : fallbackEnv;
 export const isProd = env.NODE_ENV === "production";
 
 const MIN_SECRET_LENGTH = 32;
@@ -38,17 +56,21 @@ const DEV_FALLBACK_SECRET = "dev-only-secret-change-me-in-production-please-plea
 
 let authSecret = env.AUTH_SECRET;
 if (!authSecret) {
-  if (isProd) {
+  if (isProd && !isBuildPhase) {
     throw new Error(
       "AUTH_SECRET is required in production. Generate one with: openssl rand -base64 32"
     );
   }
-  console.warn("[env] AUTH_SECRET is not set — using an insecure development fallback.");
+  console.warn(
+    isBuildPhase
+      ? "[env] AUTH_SECRET is not set — build will continue; set it in the deployment env."
+      : "[env] AUTH_SECRET is not set — using an insecure development fallback."
+  );
   authSecret = DEV_FALLBACK_SECRET;
 }
 if (authSecret.length < MIN_SECRET_LENGTH) {
   const msg = `AUTH_SECRET must be at least ${MIN_SECRET_LENGTH} characters.`;
-  if (isProd) throw new Error(msg);
+  if (isProd && !isBuildPhase) throw new Error(msg);
   console.warn(`[env] ${msg} The current secret is too short.`);
 }
 

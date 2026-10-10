@@ -21,21 +21,21 @@ const quickActions = [
     icon: Stethoscope,
     title: "Symptom Checker",
     description: "Analyze your symptoms with AI",
-    color: "#452829",
+    color: "var(--primary)",
   },
   {
     href: "/dashboard/remedies",
     icon: Leaf,
     title: "Browse Remedies",
     description: "Explore natural remedies",
-    color: "#16a34a",
+    color: "var(--success)",
   },
   {
     href: "/dashboard/chat",
     icon: MessageCircle,
     title: "AI Chat",
     description: "Ask health questions",
-    color: "#2563eb",
+    color: "var(--info)",
   },
 ];
 

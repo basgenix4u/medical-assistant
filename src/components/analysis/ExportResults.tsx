@@ -114,8 +114,8 @@ export function ExportResults({ data }: ExportResultsProps) {
   <title>MedAssist Analysis Report</title>
   <style>
     body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #333; }
-    h1 { color: #452829; border-bottom: 2px solid #E8D1C5; padding-bottom: 10px; }
-    h2 { color: #452829; margin-top: 30px; }
+    h1 { color: #0E7A5F; border-bottom: 2px solid #BFE3D8; padding-bottom: 10px; }
+    h2 { color: #0E7A5F; margin-top: 30px; }
     .meta { color: #666; margin-bottom: 30px; }
     .severity { display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: bold; }
     .severity.low { background: #dcfce7; color: #166534; }

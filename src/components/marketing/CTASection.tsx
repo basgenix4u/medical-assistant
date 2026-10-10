@@ -32,7 +32,7 @@ export function CTASection() {
                 marginBottom: "var(--space-4)",
               }}
             >
-              Ready for a clearer head?
+              Ready to feel confident about your health?
             </h2>
             <p
               style={{
@@ -43,8 +43,8 @@ export function CTASection() {
                 lineHeight: "var(--leading-relaxed)",
               }}
             >
-              Join people who use MedAssist for calm, informed guidance on everyday
-              symptoms — and keep their history private, forever.
+              Get clear, informational guidance on everyday symptoms in minutes —
+              and keep your health history private, forever.
             </p>
 
             <div

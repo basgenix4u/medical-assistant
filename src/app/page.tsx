@@ -7,6 +7,7 @@ import { FeaturesSection } from "@/components/marketing/FeaturesSection";
 import { ProductShowcase } from "@/components/marketing/ProductShowcase";
 import { BenefitsSection } from "@/components/marketing/BenefitsSection";
 import { TestimonialsSection } from "@/components/marketing/TestimonialsSection";
+import { PricingSection } from "@/components/marketing/PricingSection";
 import { FAQSection } from "@/components/marketing/FAQSection";
 import { CTASection } from "@/components/marketing/CTASection";
 import { Footer } from "@/components/marketing/Footer";
@@ -21,6 +22,7 @@ export default function HomePage() {
       <ProductShowcase />
       <BenefitsSection />
       <TestimonialsSection />
+      <PricingSection />
       <FAQSection />
       <CTASection />
       <Footer />

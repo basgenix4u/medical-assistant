@@ -64,6 +64,7 @@
 - [x] Loading/error states verified across pages; `/offline` fallback page + PWA install prompt
 - [x] PWA service worker production review (G17): `sw.js` v2 cache + navigation offline fallback; `/manifest.json` 200, `/sw.js` 200
 - [x] Production build green: **typecheck 0 errors · lint 0/0 · 33/33 tests · `next build` ✅ · all 8 routes 200** (incl. new landing hero/anchors verified in served HTML)
+- [x] **E12 v2 revision (user feedback 2026-10-10):** full palette overhaul — muddy brown/beige replaced with viridian `#0E7A5F` + warm amber `#F2A65A`, WCAG-AA contrast verified, old hex purged from all source; Fraunces (display) + Manrope (body) self-hosted type pairing; new **Pricing** section ($0 free-forever plan card + reassurance row); animated stat counters; hero pointer-parallax + richer product mock; fixed responsive grids that inline styles were overriding (hero 2-col, footer, benefits, stats)
 
 ## Phase 5 — Production Readiness (Step 5)
 
@@ -72,7 +73,8 @@
 
 - [ ] Dockerfile (Next.js standalone) + docker-compose + .dockerignore (G9)
 - [ ] CI/CD: deploy workflow (Vercel prod / GHCR image); security workflow (G16)
-- [ ] Environment configuration management (env matrix, secrets docs)
+- [x] Environment configuration management: env matrix + secrets docs in `docs/DEPLOYMENT.md` + annotated `.env.example`
+- [x] **Vercel deploy unblocked (user-reported failure):** root cause = `env.ts` threw at import time during `next build` when `AUTH_SECRET` was unset → validation now strict at runtime, tolerant during build phase; verified with a zero-env `next build` (exit 0). Plus: Turso `DATABASE_URL` support, ephemeral `/tmp` fallback on Vercel, full Vercel + Turso setup guide
 - [ ] DB backup/recovery strategy documented and restore-tested (G18)
 - [ ] Comprehensive README + `docs/DEPLOYMENT.md` + CHANGELOG + release assets
 - [ ] Dependency update process (Dependabot/Renovate) (G20)

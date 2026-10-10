@@ -1,6 +1,7 @@
 // src/app/layout.tsx
 
 import type { Metadata, Viewport } from "next";
+import { Fraunces, Manrope } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/lib/auth-context";
 import { ProfileProvider } from "@/lib/profile-context";
@@ -9,13 +10,31 @@ import InstallPrompt from "@/components/pwa/InstallPrompt";
 import { SkipLink } from "@/components/shared/SkipLink";
 import "./globals.css";
 
+/**
+ * Premium type pairing (self-hosted via next/font — no runtime font fetch):
+ * Fraunces for display headlines, Manrope for UI/body.
+ */
+const displayFont = Fraunces({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const bodyFont = Manrope({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-body",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: {
-    default: "MedAssist - Your Intelligent Medical Assistant",
+    default: "MedAssist — Understand your symptoms, feel confident about what's next",
     template: "%s | MedAssist",
   },
   description:
-    "AI-powered symptom analysis and natural remedy recommendations. For informational purposes only — not a substitute for professional medical advice.",
+    "AI-powered symptom analysis and curated natural remedies — clear, private, informational guidance in minutes. Free forever. Not a substitute for professional medical advice.",
   applicationName: "MedAssist",
   keywords: [
     "medical assistant",
@@ -58,8 +77,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#452829" },
-    { media: "(prefers-color-scheme: dark)", color: "#1a1614" },
+    { media: "(prefers-color-scheme: light)", color: "#0E7A5F" },
+    { media: "(prefers-color-scheme: dark)", color: "#0C1713" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -74,7 +93,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
+    <html
+      lang="en"
+      data-scroll-behavior="smooth"
+      suppressHydrationWarning
+      className={`${displayFont.variable} ${bodyFont.variable}`}
+    >
       <head>
         {/* PWA Meta Tags */}
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
@@ -82,7 +106,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="MedAssist" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="msapplication-TileColor" content="#452829" />
+        <meta name="msapplication-TileColor" content="#0E7A5F" />
         <meta name="msapplication-tap-highlight" content="no" />
       </head>
       <body suppressHydrationWarning>
