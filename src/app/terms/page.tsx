@@ -52,7 +52,7 @@ export default function TermsPage() {
 
       <h2 style={{ color: "var(--text-primary)", marginTop: "24px" }}>5. Limitation of Liability</h2>
       <p>
-        MedAssist is provided "as is" without warranties of any kind.
+        MedAssist is provided &quot;as is&quot; without warranties of any kind.
         The maintainers are not liable for any decisions made based on
         information provided by the service.
       </p>
