@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     description:
       "AI-powered symptom analysis and natural remedy recommendations. Informational only.",
     locale: "en_US",
-    url: "https://medical-assistant-ashen.vercel.app",
+    url: "https://medical-assistant-devs-projects-deb15629.vercel.app",
   },
   twitter: {
     card: "summary_large_image",

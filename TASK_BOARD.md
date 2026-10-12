@@ -75,6 +75,7 @@
 - [ ] CI/CD: deploy workflow (Vercel prod / GHCR image); security workflow (G16)
 - [x] Environment configuration management: env matrix + secrets docs in `docs/DEPLOYMENT.md` + annotated `.env.example`
 - [x] **Vercel deploy unblocked (user-reported failure):** root cause = `env.ts` threw at import time during `next build` when `AUTH_SECRET` was unset → validation now strict at runtime, tolerant during build phase; verified with a zero-env `next build` (exit 0). Plus: Turso `DATABASE_URL` support, ephemeral `/tmp` fallback on Vercel, full Vercel + Turso setup guide
+- [x] **DEPLOYED TO PRODUCTION (2026-10-12, user's Vercel account `basgenix4u`, team `devs-projects`):** `main` fast-forwarded to `3eb25e9` → Vercel prod build READY at `https://medical-assistant-devs-projects-deb15629.vercel.app` — new premium landing + pricing verified live, `/api/health` ok, full auth flow smoke-tested on prod (signup → session → logout → revoked). Project env set: `AUTH_SECRET` (encrypted, generated), `TRUST_PROXY=1`, `GROQ_API_KEY` (existing); stale Supabase vars removed; Vercel Authentication (SSO) deployment protection disabled for public access. NOTE: `DATABASE_URL` (Turso) still recommended — `/tmp` DB is per-instance/ephemeral, sessions can miss across cold starts
 - [ ] DB backup/recovery strategy documented and restore-tested (G18)
 - [ ] Comprehensive README + `docs/DEPLOYMENT.md` + CHANGELOG + release assets
 - [ ] Dependency update process (Dependabot/Renovate) (G20)
